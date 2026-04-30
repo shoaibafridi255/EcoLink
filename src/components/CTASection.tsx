@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Leaf, TrendingDown, Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const benefits = [
   {
@@ -21,6 +23,8 @@ const benefits = [
 ];
 
 const CTASection = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   return (
     <section className="py-20 relative overflow-hidden">
       <div className="absolute inset-0 gradient-hero opacity-95" />
@@ -47,6 +51,7 @@ const CTASection = () => {
             <div className="flex flex-col sm:flex-row gap-4">
               <Button
                 size="xl"
+                onClick={() => navigate(user ? "/browse" : "/auth?mode=signup")}
                 className="bg-white text-primary hover:bg-white/90 font-semibold shadow-lg"
               >
                 List Your Materials
@@ -55,6 +60,7 @@ const CTASection = () => {
               <Button
                 size="xl"
                 variant="outline"
+                onClick={() => navigate("/browse")}
                 className="border-2 border-white text-white bg-transparent hover:bg-white/10"
               >
                 Find Resources

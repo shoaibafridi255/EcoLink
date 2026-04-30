@@ -1,8 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Recycle, TrendingUp, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const HeroSection = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   return (
     <section className="relative min-h-screen flex items-center pt-16 overflow-hidden">
       {/* Background Effects */}
@@ -37,11 +41,19 @@ const HeroSection = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 mb-12">
-              <Button variant="hero" size="xl">
+              <Button
+                variant="hero"
+                size="xl"
+                onClick={() => navigate(user ? "/browse" : "/auth?mode=signup")}
+              >
                 Start Listing
                 <ArrowRight className="w-5 h-5" />
               </Button>
-              <Button variant="hero-outline" size="xl">
+              <Button
+                variant="hero-outline"
+                size="xl"
+                onClick={() => navigate("/browse")}
+              >
                 Browse Materials
               </Button>
             </div>

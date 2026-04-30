@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { MapPin, Clock, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
 
 interface Listing {
   id: string;
@@ -172,6 +173,7 @@ const ListingCard = ({ listing, index }: { listing: Listing; index: number }) =>
 };
 
 const FeaturedListings = () => {
+  const navigate = useNavigate();
   return (
     <section className="py-20 bg-muted/30">
       <div className="container mx-auto px-4">
@@ -197,7 +199,7 @@ const FeaturedListings = () => {
         </div>
 
         <div className="text-center">
-          <Button variant="eco" size="lg">
+          <Button variant="eco" size="lg" onClick={() => navigate("/browse")}>
             View All Listings
           </Button>
         </div>
