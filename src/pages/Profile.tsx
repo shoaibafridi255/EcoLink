@@ -197,7 +197,7 @@ const Profile = () => {
 
     const allImages = [...existingImages, ...uploadedUrls];
 
-    const payload: Record<string, unknown> = {
+    const payload = {
       title: matForm.title.trim(),
       description: matForm.description.trim() || null,
       category: matForm.category,
@@ -207,7 +207,7 @@ const Profile = () => {
       location: matForm.location.trim() || null,
       status: matForm.status,
       user_id: user.id,
-      images: allImages,
+      images: allImages as string[],
     };
 
     if (editingId) {
