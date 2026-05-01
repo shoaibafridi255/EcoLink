@@ -38,7 +38,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { User, Package, Plus, Pencil, Trash2, MapPin } from "lucide-react";
+import { User, Package, Plus, Pencil, Trash2, MapPin, ImagePlus, X } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -60,6 +60,7 @@ interface Material {
   location: string | null;
   status: string;
   image_url: string | null;
+  images: string[] | null;
   created_at: string;
 }
 
@@ -88,6 +89,9 @@ const Profile = () => {
   const [matForm, setMatForm] = useState(emptyMaterial);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate("/auth");
@@ -140,6 +144,8 @@ const Profile = () => {
   const openAddMaterial = () => {
     setEditingId(null);
     setMatForm(emptyMaterial);
+    setImageFiles([]);
+    setExistingImages([]);
     setDialogOpen(true);
   };
 
@@ -155,6 +161,8 @@ const Profile = () => {
       location: m.location ?? "",
       status: m.status,
     });
+    setImageFiles([]);
+    setExistingImages(m.images ?? []);
     setDialogOpen(true);
   };
 
@@ -163,7 +171,33 @@ const Profile = () => {
       toast.error("Title is required");
       return;
     }
-    const payload = {
+
+    const totalImages = existingImages.length + imageFiles.length;
+    if (totalImages > 5) {
+      toast.error("Maximum 5 images allowed");
+      return;
+    }
+
+    // Upload new images
+    setUploading(true);
+    const uploadedUrls: string[] = [];
+    for (const file of imageFiles) {
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from("material-images").upload(path, file);
+      if (error) {
+        toast.error(`Failed to upload ${file.name}`);
+        setUploading(false);
+        return;
+      }
+      const { data: urlData } = supabase.storage.from("material-images").getPublicUrl(path);
+      uploadedUrls.push(urlData.publicUrl);
+    }
+    setUploading(false);
+
+    const allImages = [...existingImages, ...uploadedUrls];
+
+    const payload: Record<string, unknown> = {
       title: matForm.title.trim(),
       description: matForm.description.trim() || null,
       category: matForm.category,
@@ -173,6 +207,7 @@ const Profile = () => {
       location: matForm.location.trim() || null,
       status: matForm.status,
       user_id: user.id,
+      images: allImages,
     };
 
     if (editingId) {
@@ -194,6 +229,25 @@ const Profile = () => {
     if (error) { toast.error("Failed to delete"); return; }
     setMaterials((prev) => prev.filter((m) => m.id !== id));
     toast.success("Material deleted");
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    const total = existingImages.length + imageFiles.length + files.length;
+    if (total > 5) {
+      toast.error("Maximum 5 images allowed");
+      return;
+    }
+    setImageFiles((prev) => [...prev, ...files]);
+    e.target.value = "";
+  };
+
+  const removeNewImage = (idx: number) => {
+    setImageFiles((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const removeExistingImage = (idx: number) => {
+    setExistingImages((prev) => prev.filter((_, i) => i !== idx));
   };
 
   if (loading) return null;
@@ -285,6 +339,14 @@ const Profile = () => {
                   {materials.map((m) => (
                     <Card key={m.id} className="overflow-hidden">
                       <CardContent className="flex items-start gap-4 py-4">
+                        {/* Thumbnail */}
+                        {(m.images?.length ?? 0) > 0 && (
+                          <img
+                            src={m.images![0]}
+                            alt={m.title}
+                            className="w-16 h-16 rounded-lg object-cover shrink-0 border border-border"
+                          />
+                        )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-1">
                             <h3 className="font-semibold text-foreground truncate">{m.title}</h3>
@@ -408,12 +470,54 @@ const Profile = () => {
                 )}
               </div>
             </div>
+            {/* ─── Image Upload ─── */}
+            <div>
+              <Label>Images (max 5)</Label>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {existingImages.map((url, i) => (
+                  <div key={url} className="relative w-16 h-16 rounded-lg overflow-hidden border border-border group">
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeExistingImage(i)}
+                      className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+                {imageFiles.map((f, i) => (
+                  <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-border group">
+                    <img src={URL.createObjectURL(f)} alt="" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeNewImage(i)}
+                      className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+                {existingImages.length + imageFiles.length < 5 && (
+                  <label className="w-16 h-16 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary transition-colors">
+                    <ImagePlus className="w-5 h-5 text-muted-foreground" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={handleImageSelect}
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
             <DialogFooter>
               <DialogClose asChild>
                 <Button variant="outline">Cancel</Button>
               </DialogClose>
-              <Button variant="eco" onClick={handleSaveMaterial}>
-                {editingId ? "Save Changes" : "Add Material"}
+              <Button variant="eco" onClick={handleSaveMaterial} disabled={uploading}>
+                {uploading ? "Uploading…" : editingId ? "Save Changes" : "Add Material"}
               </Button>
             </DialogFooter>
           </DialogContent>
