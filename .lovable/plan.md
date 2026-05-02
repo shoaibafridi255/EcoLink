@@ -1,49 +1,75 @@
-## Goal
-Complete EcoLink: enable backend, add auth + profiles, build missing pages, and wire up all non-functional buttons.
 
-## 1. Enable Lovable Cloud (backend)
-- Provision database, auth, storage
-- Email/password + Google sign-in
+# EcoLink - Complete Implementation Plan
 
-## 2. Database schema
-- `app_role` enum: `lister`, `seeker`
-- `profiles` table (id → auth.users, full_name, company, location, role, avatar_url, created_at)
-- `user_roles` table (id, user_id, role) — for secure role checks via `has_role()` security definer function
-- Auto-create profile via trigger on `auth.users` insert
-- RLS: users can read all profiles, update only their own; users can read own roles
+Based on your project proposal, here's what needs to be built:
 
-## 3. Authentication pages
-- `/auth` — combined Sign In / Sign Up tabs with role selector (Lister/Seeker), email/password + Google
-- Auth context/hook (`useAuth`) with `onAuthStateChange` listener set up before `getSession()`
-- Protected route wrapper for future authenticated pages
+## 1. Fix Browse Page & Real Material Feed
+The Browse page currently shows hardcoded mock data instead of real materials from the database. This will be replaced with live data.
 
-## 4. New pages
-- `/how-it-works` — detailed step-by-step for Listers and Seekers (extends existing component)
-- `/about` — EcoLink mission, sustainability impact, team/values
-- Add routes in `App.tsx`
+- Replace mock listings in FeaturedListings with real database queries
+- Show materials with images, category, price, location
+- Homepage featured section also shows real materials
 
-## 5. Wire up existing buttons
-- **Navbar Sign In** → navigates to `/auth`
-- **Navbar Get Started** → `/auth` (signup tab) when logged out; shows user menu (profile, sign out) when logged in
-- **Navbar Search icon** → opens search dialog (command palette) for materials/categories
-- **Hero CTAs** → "List Material" → `/auth` or `/dashboard`; "Find Materials" → `/browse` (placeholder for now)
-- **Footer / CTA section links** → wire to actual routes
-- Mobile menu parity
+## 2. Search & Filter System
+As specified in section 3.2 and 6.3 of your proposal:
 
-## 6. Validation & polish
-- Zod schemas on auth forms (email, password ≥ 8 chars, name)
-- Toast feedback on signup/login success/error
-- Loading states
-- Maintain existing design system (semantic tokens only)
+- **Keyword search** from the search bar in navbar
+- **Category filter** (Metals, Wood, Textiles, Plastics, Paper, Glass, etc.)
+- **Location filter**
+- **Price type filter** (Free, Negotiable, Fixed)
+- Filters displayed as a sidebar or top bar on the Browse page
 
-## Technical notes
-- Roles stored in `user_roles` table (NOT on profiles) — prevents privilege escalation
-- `has_role(uuid, app_role)` SECURITY DEFINER function for RLS checks
-- Auth redirect: `emailRedirectTo: window.location.origin`
-- Search dialog uses existing shadcn `command` component
-- All new pages follow existing Navbar/Footer layout
+## 3. Material Detail Page
+When a user clicks on a listing:
 
-## Out of scope (future steps)
-- Material listing CRUD (Browse / Create Listing pages) — flagged as next milestone
-- Messaging between Listers and Seekers
-- File uploads for material photos
+- Full description, all images (gallery), quantity, pricing
+- Lister's company name and location
+- "Express Interest" button that opens a chat thread
+
+## 4. In-App Messaging System
+As specified in section 3.3 and 6.4 of your proposal:
+
+- Database tables: `conversations` and `messages`
+- When Seeker clicks "Express Interest", a conversation is created linked to that material
+- Chat interface for real-time messaging between Lister and Seeker
+- Messages page accessible from navbar showing all conversations
+
+## 5. Admin Dashboard
+As specified in section 4D of your proposal:
+
+- Admin role support (using existing `user_roles` table with `app_role` enum)
+- Admin dashboard page at `/admin` with:
+  - Overview stats: total users, total listings, active listings, messages count
+  - User management: view all users, ban/unban accounts
+  - Category management: view material categories
+  - All listings overview with ability to moderate
+
+## 6. User Dashboard Enhancements
+As specified in section 6.5:
+
+- Metrics on Profile page: active listings count, materials saved from landfill
+- Pending message notifications indicator in navbar
+
+---
+
+## Technical Details
+
+**New database tables:**
+- `conversations` (id, material_id, seeker_id, lister_id, created_at)
+- `messages` (id, conversation_id, sender_id, content, created_at)
+- Realtime enabled on messages table
+
+**New pages:**
+- `/materials/:id` - Material detail page
+- `/messages` - Conversations list and chat
+- `/admin` - Admin dashboard (protected by role check)
+
+**Modified components:**
+- `FeaturedListings.tsx` - fetch real data from DB
+- `Browse.tsx` - add filters and search
+- `Navbar.tsx` - messages indicator, admin link
+- `Profile.tsx` - dashboard metrics
+
+**Database migrations:**
+- Create conversations and messages tables with RLS
+- Add admin role to a designated user
