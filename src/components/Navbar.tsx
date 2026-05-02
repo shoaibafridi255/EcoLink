@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Recycle, Search, LogOut, User } from "lucide-react";
+import { Menu, X, Recycle, Search, LogOut, User, MessageCircle, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
   CommandDialog,
@@ -96,6 +96,16 @@ const Navbar = () => {
                     <User className="w-4 h-4 mr-2" />
                     My Profile
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/messages")} className="cursor-pointer">
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Messages
+                  </DropdownMenuItem>
+                  {role === "admin" && (
+                    <DropdownMenuItem onClick={() => navigate("/admin")} className="cursor-pointer">
+                      <Shield className="w-4 h-4 mr-2" />
+                      Admin Dashboard
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
                     <LogOut className="w-4 h-4 mr-2" />
                     Sign Out
@@ -155,6 +165,14 @@ const Navbar = () => {
                     <Button variant="outline" className="w-full" onClick={() => { setIsOpen(false); navigate("/profile"); }}>
                       <User className="w-4 h-4 mr-2" /> My Profile
                     </Button>
+                    <Button variant="outline" className="w-full" onClick={() => { setIsOpen(false); navigate("/messages"); }}>
+                      <MessageCircle className="w-4 h-4 mr-2" /> Messages
+                    </Button>
+                    {role === "admin" && (
+                      <Button variant="outline" className="w-full" onClick={() => { setIsOpen(false); navigate("/admin"); }}>
+                        <Shield className="w-4 h-4 mr-2" /> Admin
+                      </Button>
+                    )}
                     <Button variant="outline" className="w-full" onClick={() => { setIsOpen(false); handleSignOut(); }}>
                       <LogOut className="w-4 h-4 mr-2" /> Sign Out
                     </Button>
