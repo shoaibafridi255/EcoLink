@@ -1,98 +1,23 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { MapPin, Clock, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
-interface Listing {
+interface DBMaterial {
   id: string;
   title: string;
   category: string;
-  quantity: string;
-  unit: string;
-  location: string;
-  postedAt: string;
-  pricingModel: "Free" | "Negotiable" | "Fixed";
-  price?: number;
-  image: string;
+  quantity: string | null;
+  location: string | null;
+  price_type: string;
+  price: number | null;
+  images: string[] | null;
+  image_url: string | null;
+  created_at: string;
 }
-
-const mockListings: Listing[] = [
-  {
-    id: "1",
-    title: "Aluminum Scrap Metal",
-    category: "Metals",
-    quantity: "150",
-    unit: "kg",
-    location: "Industrial Zone B",
-    postedAt: "3 hours ago",
-    pricingModel: "Negotiable",
-    image:
-      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop",
-  },
-  {
-    id: "2",
-    title: "Hardwood Offcuts",
-    category: "Wood",
-    quantity: "50",
-    unit: "pieces",
-    location: "Furniture District",
-    postedAt: "5 hours ago",
-    pricingModel: "Free",
-    image:
-      "https://images.unsplash.com/photo-1520052203542-d3095f1b6cf0?w=400&h=300&fit=crop",
-  },
-  {
-    id: "3",
-    title: "Fabric Remnants - Cotton",
-    category: "Textiles",
-    quantity: "30",
-    unit: "kg",
-    location: "Textile Park",
-    postedAt: "1 day ago",
-    pricingModel: "Fixed",
-    price: 25,
-    image:
-      "https://images.unsplash.com/photo-1558171813-4c088753af8f?w=400&h=300&fit=crop",
-  },
-  {
-    id: "4",
-    title: "Plastic Shavings - HDPE",
-    category: "Plastics",
-    quantity: "200",
-    unit: "kg",
-    location: "Manufacturing Hub",
-    postedAt: "2 days ago",
-    pricingModel: "Negotiable",
-    image:
-      "https://images.unsplash.com/photo-1604187351574-c75ca79f5807?w=400&h=300&fit=crop",
-  },
-  {
-    id: "5",
-    title: "Cardboard Boxes - Clean",
-    category: "Paper",
-    quantity: "100",
-    unit: "pieces",
-    location: "Logistics Center",
-    postedAt: "6 hours ago",
-    pricingModel: "Free",
-    image:
-      "https://images.unsplash.com/photo-1607166452427-7e4477e6ae75?w=400&h=300&fit=crop",
-  },
-  {
-    id: "6",
-    title: "Glass Cullet - Clear",
-    category: "Glass",
-    quantity: "80",
-    unit: "kg",
-    location: "Industrial Zone A",
-    postedAt: "4 hours ago",
-    pricingModel: "Fixed",
-    price: 15,
-    image:
-      "https://images.unsplash.com/photo-1518640467707-6811f4a6ab73?w=400&h=300&fit=crop",
-  },
-];
 
 const categoryColors: Record<string, string> = {
   Metals: "bg-eco-sky/20 text-eco-sky border-eco-sky/30",
@@ -109,7 +34,20 @@ const pricingColors: Record<string, string> = {
   Fixed: "bg-accent text-accent-foreground",
 };
 
-const ListingCard = ({ listing, index }: { listing: Listing; index: number }) => {
+function timeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
+const ListingCard = ({ listing, index }: { listing: DBMaterial; index: number }) => {
+  const image = listing.images?.[0] || listing.image_url || "/placeholder.svg";
+  const pricingLabel = listing.price_type === "free" ? "Free" : listing.price_type === "fixed" ? `$${listing.price}` : "Negotiable";
+  const catLabel = listing.category.charAt(0).toUpperCase() + listing.category.slice(1);
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -121,20 +59,18 @@ const ListingCard = ({ listing, index }: { listing: Listing; index: number }) =>
       {/* Image */}
       <div className="relative aspect-[4/3] overflow-hidden">
         <img
-          src={listing.image}
+          src={image}
           alt={listing.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
         <div className="absolute top-3 left-3">
-          <Badge className={categoryColors[listing.category] || ""}>
-            {listing.category}
+          <Badge className={categoryColors[catLabel] || "bg-muted text-muted-foreground"}>
+            {catLabel}
           </Badge>
         </div>
         <div className="absolute top-3 right-3">
-          <Badge className={pricingColors[listing.pricingModel]}>
-            {listing.pricingModel === "Fixed"
-              ? `$${listing.price}`
-              : listing.pricingModel}
+          <Badge className={pricingColors[listing.price_type === "free" ? "Free" : listing.price_type === "fixed" ? "Fixed" : "Negotiable"]}>
+            {pricingLabel}
           </Badge>
         </div>
       </div>
@@ -148,23 +84,23 @@ const ListingCard = ({ listing, index }: { listing: Listing; index: number }) =>
         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
           <div className="flex items-center gap-1">
             <Tag className="w-4 h-4" />
-            <span>
-              {listing.quantity} {listing.unit}
-            </span>
+            <span>{listing.quantity || "—"}</span>
           </div>
           <div className="flex items-center gap-1">
             <MapPin className="w-4 h-4" />
-            <span className="truncate">{listing.location}</span>
+            <span className="truncate">{listing.location || "—"}</span>
           </div>
         </div>
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Clock className="w-3 h-3" />
-            <span>{listing.postedAt}</span>
+            <span>{timeAgo(listing.created_at)}</span>
           </div>
-          <Button variant="ghost" size="sm" className="text-primary hover:text-primary">
+          <Button variant="ghost" size="sm" className="text-primary hover:text-primary" asChild>
+            <Link to={`/materials/${listing.id}`}>
             View Details
+            </Link>
           </Button>
         </div>
       </div>
@@ -172,8 +108,32 @@ const ListingCard = ({ listing, index }: { listing: Listing; index: number }) =>
   );
 };
 
-const FeaturedListings = () => {
+const FeaturedListings = ({ limit = 6, query, category, priceType }: { limit?: number; query?: string; category?: string; priceType?: string }) => {
   const navigate = useNavigate();
+  const [listings, setListings] = useState<DBMaterial[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetch = async () => {
+      setLoading(true);
+      let q = supabase
+        .from("materials")
+        .select("id, title, category, quantity, location, price_type, price, images, image_url, created_at")
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+
+      if (query) q = q.or(`title.ilike.%${query}%,description.ilike.%${query}%,category.ilike.%${query}%,location.ilike.%${query}%`);
+      if (category) q = q.eq("category", category);
+      if (priceType) q = q.eq("price_type", priceType);
+
+      const { data } = await q;
+      setListings(data ?? []);
+      setLoading(false);
+    };
+    fetch();
+  }, [limit, query, category, priceType]);
+
   return (
     <section className="py-20 bg-muted/30">
       <div className="container mx-auto px-4">
@@ -192,11 +152,17 @@ const FeaturedListings = () => {
           </p>
         </motion.div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-          {mockListings.map((listing, index) => (
-            <ListingCard key={listing.id} listing={listing} index={index} />
-          ))}
-        </div>
+        {loading ? (
+          <p className="text-center text-muted-foreground py-12">Loading materials…</p>
+        ) : listings.length === 0 ? (
+          <p className="text-center text-muted-foreground py-12">No materials found. Be the first to list one!</p>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+            {listings.map((listing, index) => (
+              <ListingCard key={listing.id} listing={listing} index={index} />
+            ))}
+          </div>
+        )}
 
         <div className="text-center">
           <Button variant="eco" size="lg" onClick={() => navigate("/browse")}>
