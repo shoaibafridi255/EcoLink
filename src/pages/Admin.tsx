@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,7 +8,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Package, MessageCircle, BarChart3, Trash2 } from "lucide-react";
+import {
+  Users,
+  Package,
+  MessageCircle,
+  BarChart3,
+  Trash2,
+  Leaf,
+  TrendingUp,
+  ShoppingCart,
+  Store,
+  Activity,
+  ArrowUpRight,
+  ArrowDownRight,
+} from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import {
@@ -40,14 +53,24 @@ interface MaterialRow {
   created_at: string;
   location: string | null;
   price_type: string;
+  quantity: string | null;
+}
+
+interface ConversationRow {
+  id: string;
+  material_id: string;
+  seeker_id: string;
+  lister_id: string;
+  created_at: string;
 }
 
 const Admin = () => {
   const { user, role, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [stats, setStats] = useState({ users: 0, materials: 0, active: 0, conversations: 0 });
   const [users, setUsers] = useState<(ProfileRow & { role?: string })[]>([]);
   const [materials, setMaterials] = useState<MaterialRow[]>([]);
+  const [conversations, setConversations] = useState<ConversationRow[]>([]);
+  const [messageCount, setMessageCount] = useState(0);
   const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
@@ -62,78 +85,318 @@ const Admin = () => {
     const fetchData = async () => {
       setLoadingData(true);
 
-      // Fetch profiles
-      const { data: profiles } = await supabase.from("profiles").select("id, full_name, company, location, created_at");
-      // Fetch roles
-      const { data: roles } = await supabase.from("user_roles").select("user_id, role");
-      const roleMap = new Map((roles ?? []).map((r) => [r.user_id, r.role]));
-      const enrichedUsers = (profiles ?? []).map((p) => ({ ...p, role: roleMap.get(p.id) ?? "unknown" }));
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, company, location, created_at");
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+      const roleMap = new Map(
+        (roles ?? []).map((r) => [r.user_id, r.role])
+      );
+      const enrichedUsers = (profiles ?? []).map((p) => ({
+        ...p,
+        role: roleMap.get(p.id) ?? "unknown",
+      }));
       setUsers(enrichedUsers);
 
-      // Fetch materials
-      const { data: mats } = await supabase.from("materials").select("id, title, category, status, user_id, created_at, location, price_type").order("created_at", { ascending: false });
+      const { data: mats } = await supabase
+        .from("materials")
+        .select("id, title, category, status, user_id, created_at, location, price_type, quantity")
+        .order("created_at", { ascending: false });
       setMaterials(mats ?? []);
 
-      // Fetch conversations count
-      const { count: convCount } = await supabase.from("conversations").select("id", { count: "exact", head: true });
+      const { data: convs } = await supabase
+        .from("conversations")
+        .select("id, material_id, seeker_id, lister_id, created_at");
+      setConversations(convs ?? []);
 
-      setStats({
-        users: enrichedUsers.length,
-        materials: (mats ?? []).length,
-        active: (mats ?? []).filter((m) => m.status === "active").length,
-        conversations: convCount ?? 0,
-      });
+      const { count: msgCount } = await supabase
+        .from("messages")
+        .select("id", { count: "exact", head: true });
+      setMessageCount(msgCount ?? 0);
 
       setLoadingData(false);
     };
     fetchData();
   }, [role]);
 
+  // Computed stats
+  const stats = useMemo(() => {
+    const totalUsers = users.length;
+    const activeListings = materials.filter((m) => m.status === "active").length;
+    const totalListings = materials.length;
+    const totalConversations = conversations.length;
+
+    // Unique listers who have listed materials
+    const uniqueListers = new Set(materials.map((m) => m.user_id)).size;
+    // Unique seekers who initiated conversations (buyers)
+    const uniqueSeekers = new Set(conversations.map((c) => c.seeker_id)).size;
+    // Unique businesses involved in transactions (both sides)
+    const businessesTrading = new Set([
+      ...conversations.map((c) => c.seeker_id),
+      ...conversations.map((c) => c.lister_id),
+    ]).size;
+
+    // Waste diverted estimate: count materials that have at least one conversation (interest)
+    const materialsWithInterest = new Set(conversations.map((c) => c.material_id));
+    const wasteDiverted = materialsWithInterest.size;
+
+    // Category breakdown
+    const categoryMap = new Map<string, number>();
+    materials.forEach((m) => {
+      categoryMap.set(m.category, (categoryMap.get(m.category) ?? 0) + 1);
+    });
+    const categories = Array.from(categoryMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({ name, count }));
+
+    // Listers vs Seekers
+    const listerCount = users.filter((u) => u.role === "lister").length;
+    const seekerCount = users.filter((u) => u.role === "seeker").length;
+
+    // Recent activity (last 7 days)
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const newUsersThisWeek = users.filter(
+      (u) => new Date(u.created_at) >= weekAgo
+    ).length;
+    const newListingsThisWeek = materials.filter(
+      (m) => new Date(m.created_at) >= weekAgo
+    ).length;
+
+    return {
+      totalUsers,
+      activeListings,
+      totalListings,
+      totalConversations,
+      uniqueListers,
+      uniqueSeekers,
+      businessesTrading,
+      wasteDiverted,
+      categories,
+      listerCount,
+      seekerCount,
+      newUsersThisWeek,
+      newListingsThisWeek,
+      messageCount,
+    };
+  }, [users, materials, conversations, messageCount]);
+
   const handleDeleteMaterial = async (id: string) => {
     const { error } = await supabase.from("materials").delete().eq("id", id);
-    if (error) { toast.error("Failed to delete"); return; }
+    if (error) {
+      toast.error("Failed to delete");
+      return;
+    }
     setMaterials((prev) => prev.filter((m) => m.id !== id));
-    setStats((s) => ({ ...s, materials: s.materials - 1 }));
     toast.success("Material deleted");
   };
 
   if (authLoading || role !== "admin") return null;
 
+  const V = ({ v }: { v: number | string }) => (
+    <span>{loadingData ? "…" : v}</span>
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="container mx-auto px-4 pt-24 pb-16">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="font-display text-3xl font-bold text-foreground mb-2">Admin Dashboard</h1>
-          <p className="text-muted-foreground mb-8">Platform overview and management</p>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 gradient-eco rounded-lg flex items-center justify-center">
+              <Activity className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="font-display text-3xl font-bold text-foreground">
+                Admin Dashboard
+              </h1>
+              <p className="text-muted-foreground">
+                Full platform overview &amp; management
+              </p>
+            </div>
+          </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {/* Primary Stats Row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 mb-6">
             {[
-              { label: "Total Users", value: stats.users, icon: Users },
-              { label: "Total Listings", value: stats.materials, icon: Package },
-              { label: "Active Listings", value: stats.active, icon: BarChart3 },
-              { label: "Conversations", value: stats.conversations, icon: MessageCircle },
+              {
+                label: "Total Users",
+                value: stats.totalUsers,
+                icon: Users,
+                sub: `${stats.newUsersThisWeek} this week`,
+                color: "text-blue-500",
+              },
+              {
+                label: "Active Listings",
+                value: stats.activeListings,
+                icon: Package,
+                sub: `${stats.totalListings} total`,
+                color: "text-emerald-500",
+              },
+              {
+                label: "Waste Diverted",
+                value: stats.wasteDiverted,
+                icon: Leaf,
+                sub: "materials with interest",
+                color: "text-green-600",
+              },
+              {
+                label: "Conversations",
+                value: stats.totalConversations,
+                icon: MessageCircle,
+                sub: `${stats.messageCount} messages`,
+                color: "text-purple-500",
+              },
             ].map((s) => (
-              <Card key={s.label}>
-                <CardContent className="py-6 text-center">
-                  <s.icon className="w-8 h-8 mx-auto text-primary mb-2" />
-                  <p className="text-3xl font-bold text-foreground">{loadingData ? "…" : s.value}</p>
-                  <p className="text-sm text-muted-foreground">{s.label}</p>
+              <Card key={s.label} className="relative overflow-hidden">
+                <CardContent className="py-5 px-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        {s.label}
+                      </p>
+                      <p className="text-3xl font-bold text-foreground">
+                        <V v={s.value} />
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {s.sub}
+                      </p>
+                    </div>
+                    <s.icon className={`w-8 h-8 ${s.color} opacity-80`} />
+                  </div>
                 </CardContent>
               </Card>
             ))}
+          </div>
+
+          {/* Secondary Stats Row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            {[
+              {
+                label: "Businesses Selling",
+                value: stats.uniqueListers,
+                icon: Store,
+                color: "text-orange-500",
+              },
+              {
+                label: "Businesses Buying",
+                value: stats.uniqueSeekers,
+                icon: ShoppingCart,
+                color: "text-cyan-500",
+              },
+              {
+                label: "Businesses Trading",
+                value: stats.businessesTrading,
+                icon: TrendingUp,
+                color: "text-primary",
+              },
+              {
+                label: "New Listings (7d)",
+                value: stats.newListingsThisWeek,
+                icon: BarChart3,
+                color: "text-amber-500",
+              },
+            ].map((s) => (
+              <Card key={s.label}>
+                <CardContent className="py-4 px-4 flex items-center gap-3">
+                  <s.icon className={`w-6 h-6 ${s.color}`} />
+                  <div>
+                    <p className="text-2xl font-bold text-foreground">
+                      <V v={s.value} />
+                    </p>
+                    <p className="text-xs text-muted-foreground">{s.label}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Role & Category Breakdown */}
+          <div className="grid md:grid-cols-2 gap-4 mb-8">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">User Breakdown</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ArrowUpRight className="w-4 h-4 text-emerald-500" />
+                    <span className="text-sm text-foreground">Listers (Sellers)</span>
+                  </div>
+                  <Badge variant="secondary">{stats.listerCount}</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ArrowDownRight className="w-4 h-4 text-blue-500" />
+                    <span className="text-sm text-foreground">Seekers (Buyers)</span>
+                  </div>
+                  <Badge variant="secondary">{stats.seekerCount}</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-primary" />
+                    <span className="text-sm text-foreground">Admins</span>
+                  </div>
+                  <Badge variant="secondary">
+                    {users.filter((u) => u.role === "admin").length}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">
+                  Top Categories
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {stats.categories.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No materials yet</p>
+                )}
+                {stats.categories.slice(0, 5).map((c) => (
+                  <div
+                    key={c.name}
+                    className="flex items-center justify-between"
+                  >
+                    <span className="text-sm text-foreground capitalize">
+                      {c.name}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-2 rounded-full bg-primary/60"
+                        style={{
+                          width: `${Math.max(
+                            20,
+                            (c.count / (stats.categories[0]?.count || 1)) * 100
+                          )}px`,
+                        }}
+                      />
+                      <Badge variant="outline">{c.count}</Badge>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
           </div>
 
           <Tabs defaultValue="users">
             <TabsList>
               <TabsTrigger value="users">Users</TabsTrigger>
               <TabsTrigger value="materials">Materials</TabsTrigger>
+              <TabsTrigger value="transactions">Transactions</TabsTrigger>
             </TabsList>
 
             <TabsContent value="users">
               <Card>
-                <CardHeader><CardTitle>All Users</CardTitle></CardHeader>
+                <CardHeader>
+                  <CardTitle>All Users ({users.length})</CardTitle>
+                </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -148,12 +411,28 @@ const Admin = () => {
                       </thead>
                       <tbody>
                         {users.map((u) => (
-                          <tr key={u.id} className="border-b border-border/50">
-                            <td className="py-2 px-3 text-foreground">{u.full_name || "—"}</td>
+                          <tr
+                            key={u.id}
+                            className="border-b border-border/50 hover:bg-muted/30 transition-colors"
+                          >
+                            <td className="py-2 px-3 text-foreground font-medium">
+                              {u.full_name || "—"}
+                            </td>
                             <td className="py-2 px-3">{u.company || "—"}</td>
                             <td className="py-2 px-3">{u.location || "—"}</td>
-                            <td className="py-2 px-3"><Badge variant="secondary" className="capitalize">{u.role}</Badge></td>
-                            <td className="py-2 px-3 text-muted-foreground">{new Date(u.created_at).toLocaleDateString()}</td>
+                            <td className="py-2 px-3">
+                              <Badge
+                                variant={
+                                  u.role === "admin" ? "default" : "secondary"
+                                }
+                                className="capitalize"
+                              >
+                                {u.role}
+                              </Badge>
+                            </td>
+                            <td className="py-2 px-3 text-muted-foreground">
+                              {new Date(u.created_at).toLocaleDateString()}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -165,7 +444,9 @@ const Admin = () => {
 
             <TabsContent value="materials">
               <Card>
-                <CardHeader><CardTitle>All Materials</CardTitle></CardHeader>
+                <CardHeader>
+                  <CardTitle>All Materials ({materials.length})</CardTitle>
+                </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -181,33 +462,141 @@ const Admin = () => {
                       </thead>
                       <tbody>
                         {materials.map((m) => (
-                          <tr key={m.id} className="border-b border-border/50">
-                            <td className="py-2 px-3 text-foreground">{m.title}</td>
-                            <td className="py-2 px-3 capitalize">{m.category}</td>
-                            <td className="py-2 px-3"><Badge variant={m.status === "active" ? "default" : "secondary"} className="capitalize">{m.status}</Badge></td>
-                            <td className="py-2 px-3 capitalize">{m.price_type}</td>
-                            <td className="py-2 px-3">{m.location || "—"}</td>
+                          <tr
+                            key={m.id}
+                            className="border-b border-border/50 hover:bg-muted/30 transition-colors"
+                          >
+                            <td className="py-2 px-3 text-foreground font-medium">
+                              {m.title}
+                            </td>
+                            <td className="py-2 px-3 capitalize">
+                              {m.category}
+                            </td>
+                            <td className="py-2 px-3">
+                              <Badge
+                                variant={
+                                  m.status === "active"
+                                    ? "default"
+                                    : "secondary"
+                                }
+                                className="capitalize"
+                              >
+                                {m.status}
+                              </Badge>
+                            </td>
+                            <td className="py-2 px-3 capitalize">
+                              {m.price_type}
+                            </td>
+                            <td className="py-2 px-3">
+                              {m.location || "—"}
+                            </td>
                             <td className="py-2 px-3">
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-destructive hover:text-destructive"
+                                  >
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete "{m.title}"?</AlertDialogTitle>
-                                    <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                                    <AlertDialogTitle>
+                                      Delete "{m.title}"?
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This action cannot be undone.
+                                    </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteMaterial(m.id)}>Delete</AlertDialogAction>
+                                    <AlertDialogCancel>
+                                      Cancel
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() =>
+                                        handleDeleteMaterial(m.id)
+                                      }
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>
                             </td>
                           </tr>
                         ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="transactions">
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    Business Transactions ({conversations.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Each conversation represents a business expressing interest
+                    in purchasing/acquiring materials from another business.
+                  </p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border text-left text-muted-foreground">
+                          <th className="py-2 px-3">Material</th>
+                          <th className="py-2 px-3">Seller</th>
+                          <th className="py-2 px-3">Buyer</th>
+                          <th className="py-2 px-3">Date</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {conversations.map((c) => {
+                          const mat = materials.find(
+                            (m) => m.id === c.material_id
+                          );
+                          const seller = users.find(
+                            (u) => u.id === c.lister_id
+                          );
+                          const buyer = users.find(
+                            (u) => u.id === c.seeker_id
+                          );
+                          return (
+                            <tr
+                              key={c.id}
+                              className="border-b border-border/50 hover:bg-muted/30 transition-colors"
+                            >
+                              <td className="py-2 px-3 text-foreground font-medium">
+                                {mat?.title ?? "—"}
+                              </td>
+                              <td className="py-2 px-3">
+                                {seller?.full_name ?? seller?.company ?? "—"}
+                              </td>
+                              <td className="py-2 px-3">
+                                {buyer?.full_name ?? buyer?.company ?? "—"}
+                              </td>
+                              <td className="py-2 px-3 text-muted-foreground">
+                                {new Date(c.created_at).toLocaleDateString()}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {conversations.length === 0 && (
+                          <tr>
+                            <td
+                              colSpan={4}
+                              className="py-8 text-center text-muted-foreground"
+                            >
+                              No transactions yet
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
