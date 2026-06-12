@@ -32,8 +32,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             .from("user_roles")
             .select("role")
             .eq("user_id", newSession.user.id)
-            .maybeSingle()
-            .then(({ data }) => setRole((data?.role as Role) ?? null));
+            .then(({ data }) => {
+              const roles = (data ?? []).map((r: { role: string }) => r.role);
+              const best = roles.includes("admin")
+                ? "admin"
+                : roles.includes("lister")
+                  ? "lister"
+                  : roles.includes("seeker")
+                    ? "seeker"
+                    : null;
+              setRole(best as Role);
+            });
         }, 0);
       } else {
         setRole(null);
@@ -49,8 +58,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .from("user_roles")
           .select("role")
           .eq("user_id", existing.user.id)
-          .maybeSingle()
-          .then(({ data }) => setRole((data?.role as Role) ?? null));
+          .then(({ data }) => {
+            const roles = (data ?? []).map((r: { role: string }) => r.role);
+            const best = roles.includes("admin")
+              ? "admin"
+              : roles.includes("lister")
+                ? "lister"
+                : roles.includes("seeker")
+                  ? "seeker"
+                  : null;
+            setRole(best as Role);
+          });
       }
       setLoading(false);
     });
