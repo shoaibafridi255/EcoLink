@@ -115,6 +115,7 @@ const Navbar = () => {
             ) : (
               <>
                 <Button variant="outline" onClick={() => navigate("/auth")}>Sign In</Button>
+                <Button variant="outline" onClick={() => navigate("/auth?mode=signup&role=admin")}>Create Admin</Button>
                 <Button variant="eco" onClick={() => navigate("/auth?mode=signup")}>Get Started</Button>
               </>
             )}
@@ -181,6 +182,9 @@ const Navbar = () => {
                   <>
                     <Button variant="outline" className="w-full" onClick={() => { setIsOpen(false); navigate("/auth"); }}>
                       Sign In
+                    </Button>
+                    <Button variant="outline" className="w-full" onClick={() => { setIsOpen(false); navigate("/auth?mode=signup&role=admin"); }}>
+                      Create Admin
                     </Button>
                     <Button variant="eco" className="w-full" onClick={() => { setIsOpen(false); navigate("/auth?mode=signup"); }}>
                       Get Started
