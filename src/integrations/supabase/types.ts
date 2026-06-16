@@ -195,6 +195,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      register_profile: {
+        Args: {
+          _company?: string
+          _full_name: string
+          _location?: string
+          _role?: string
+          _user_id: string
+        }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
     }
     Enums: {
       app_role: "lister" | "seeker" | "admin"
