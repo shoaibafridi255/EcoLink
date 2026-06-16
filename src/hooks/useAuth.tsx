@@ -20,55 +20,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [role, setRole] = useState<Role>(null);
   const [loading, setLoading] = useState(true);
 
+  const loadRole = async (userId: string) => {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    const roles = (data ?? []).map((r: { role: string }) => r.role);
+    const best = roles.includes("admin")
+      ? "admin"
+      : roles.includes("lister")
+        ? "lister"
+        : roles.includes("seeker")
+          ? "seeker"
+          : null;
+    setRole(best as Role);
+  };
+
   useEffect(() => {
     // Set up listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setLoading(true);
       setSession(newSession);
       setUser(newSession?.user ?? null);
       if (newSession?.user) {
         // Defer role fetch to avoid deadlocks
         setTimeout(() => {
-          supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", newSession.user.id)
-            .then(({ data }) => {
-              const roles = (data ?? []).map((r: { role: string }) => r.role);
-              const best = roles.includes("admin")
-                ? "admin"
-                : roles.includes("lister")
-                  ? "lister"
-                  : roles.includes("seeker")
-                    ? "seeker"
-                    : null;
-              setRole(best as Role);
-            });
+          loadRole(newSession.user.id).finally(() => setLoading(false));
         }, 0);
       } else {
         setRole(null);
+        setLoading(false);
       }
     });
 
     // THEN check existing session
-    supabase.auth.getSession().then(({ data: { session: existing } }) => {
+    supabase.auth.getSession().then(async ({ data: { session: existing } }) => {
       setSession(existing);
       setUser(existing?.user ?? null);
       if (existing?.user) {
-        supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", existing.user.id)
-          .then(({ data }) => {
-            const roles = (data ?? []).map((r: { role: string }) => r.role);
-            const best = roles.includes("admin")
-              ? "admin"
-              : roles.includes("lister")
-                ? "lister"
-                : roles.includes("seeker")
-                  ? "seeker"
-                  : null;
-            setRole(best as Role);
-          });
+        await loadRole(existing.user.id);
       }
       setLoading(false);
     });
