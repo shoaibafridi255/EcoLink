@@ -188,22 +188,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_create_first_admin: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
-      }
-      register_profile: {
-        Args: {
-          _company?: string
-          _full_name: string
-          _location?: string
-          _role?: string
-          _user_id: string
-        }
-        Returns: Database["public"]["Enums"]["app_role"]
       }
     }
     Enums: {
