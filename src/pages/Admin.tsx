@@ -67,7 +67,7 @@ interface ConversationRow {
 const Admin = () => {
   const { user, role, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [users, setUsers] = useState<(ProfileRow & { role?: string })[]>([]);
+  const [users, setUsers] = useState<(ProfileRow & { role?: string; roles?: string[] })[]>([]);
   const [materials, setMaterials] = useState<MaterialRow[]>([]);
   const [conversations, setConversations] = useState<ConversationRow[]>([]);
   const [messageCount, setMessageCount] = useState(0);
@@ -432,6 +432,7 @@ const Admin = () => {
                           <th className="py-2 px-3">Location</th>
                           <th className="py-2 px-3">Role</th>
                           <th className="py-2 px-3">Joined</th>
+                          <th className="py-2 px-3">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -457,6 +458,20 @@ const Admin = () => {
                             </td>
                             <td className="py-2 px-3 text-muted-foreground">
                               {new Date(u.created_at).toLocaleDateString()}
+                            </td>
+                            <td className="py-2 px-3">
+                              {u.role === "admin" ? (
+                                <Badge variant="outline">Admin active</Badge>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={updatingRoleId === u.id}
+                                  onClick={() => handleMakeAdmin(u.id)}
+                                >
+                                  Make Admin
+                                </Button>
+                              )}
                             </td>
                           </tr>
                         ))}
