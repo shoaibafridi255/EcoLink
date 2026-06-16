@@ -72,6 +72,7 @@ const Admin = () => {
   const [conversations, setConversations] = useState<ConversationRow[]>([]);
   const [messageCount, setMessageCount] = useState(0);
   const [loadingData, setLoadingData] = useState(true);
+  const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && (!user || role !== "admin")) {
@@ -91,12 +92,16 @@ const Admin = () => {
       const { data: roles } = await supabase
         .from("user_roles")
         .select("user_id, role");
-      const roleMap = new Map(
-        (roles ?? []).map((r) => [r.user_id, r.role])
-      );
+      const rolesByUser = new Map<string, string[]>();
+      (roles ?? []).forEach((r) => {
+        rolesByUser.set(r.user_id, [...(rolesByUser.get(r.user_id) ?? []), r.role]);
+      });
+      const getPrimaryRole = (userRoles: string[] = []) =>
+        userRoles.includes("admin") ? "admin" : userRoles.includes("lister") ? "lister" : userRoles.includes("seeker") ? "seeker" : "unknown";
       const enrichedUsers = (profiles ?? []).map((p) => ({
         ...p,
-        role: roleMap.get(p.id) ?? "unknown",
+        roles: rolesByUser.get(p.id) ?? [],
+        role: getPrimaryRole(rolesByUser.get(p.id)),
       }));
       setUsers(enrichedUsers);
 
@@ -191,6 +196,26 @@ const Admin = () => {
     }
     setMaterials((prev) => prev.filter((m) => m.id !== id));
     toast.success("Material deleted");
+  };
+
+  const handleMakeAdmin = async (profileId: string) => {
+    const target = users.find((u) => u.id === profileId);
+    if (target?.roles?.includes("admin")) return;
+    setUpdatingRoleId(profileId);
+    const { error } = await supabase.from("user_roles").insert({ user_id: profileId, role: "admin" });
+    setUpdatingRoleId(null);
+    if (error) {
+      toast.error("Failed to assign admin role");
+      return;
+    }
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === profileId
+          ? { ...u, roles: Array.from(new Set([...(u.roles ?? []), "admin"])), role: "admin" }
+          : u
+      )
+    );
+    toast.success("Admin role assigned");
   };
 
   if (authLoading || role !== "admin") return null;
