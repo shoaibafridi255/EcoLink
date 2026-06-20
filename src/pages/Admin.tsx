@@ -8,12 +8,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Users,
   Package,
   MessageCircle,
   BarChart3,
   Trash2,
+  Pencil,
   Leaf,
   TrendingUp,
   ShoppingCart,
@@ -21,6 +38,8 @@ import {
   Activity,
   ArrowUpRight,
   ArrowDownRight,
+  Search,
+  ShieldOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -73,6 +92,10 @@ const Admin = () => {
   const [messageCount, setMessageCount] = useState(0);
   const [loadingData, setLoadingData] = useState(true);
   const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
+  const [userSearch, setUserSearch] = useState("");
+  const [materialSearch, setMaterialSearch] = useState("");
+  const [editingMaterial, setEditingMaterial] = useState<MaterialRow | null>(null);
+  const [savingMaterial, setSavingMaterial] = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!user || role !== "admin")) {
@@ -191,11 +214,62 @@ const Admin = () => {
   const handleDeleteMaterial = async (id: string) => {
     const { error } = await supabase.from("materials").delete().eq("id", id);
     if (error) {
-      toast.error("Failed to delete");
+      toast.error(`Failed to delete: ${error.message}`);
       return;
     }
     setMaterials((prev) => prev.filter((m) => m.id !== id));
     toast.success("Material deleted");
+  };
+
+  const handleSaveMaterial = async () => {
+    if (!editingMaterial) return;
+    setSavingMaterial(true);
+    const { id, title, category, status, price_type, location, quantity } = editingMaterial;
+    const { error } = await supabase
+      .from("materials")
+      .update({ title, category, status, price_type, location, quantity })
+      .eq("id", id);
+    setSavingMaterial(false);
+    if (error) {
+      toast.error(`Failed to update: ${error.message}`);
+      return;
+    }
+    setMaterials((prev) => prev.map((m) => (m.id === id ? { ...m, title, category, status, price_type, location, quantity } : m)));
+    setEditingMaterial(null);
+    toast.success("Material updated");
+  };
+
+  const handleRemoveUser = async (profileId: string) => {
+    if (profileId === user?.id) {
+      toast.error("You cannot remove your own admin account");
+      return;
+    }
+    const { error: matErr } = await supabase.from("materials").delete().eq("user_id", profileId);
+    if (matErr) { toast.error(`Failed: ${matErr.message}`); return; }
+    const { error: roleErr } = await supabase.from("user_roles").delete().eq("user_id", profileId);
+    if (roleErr) { toast.error(`Failed: ${roleErr.message}`); return; }
+    const { error: profErr } = await supabase.from("profiles").delete().eq("id", profileId);
+    if (profErr) { toast.error(`Failed: ${profErr.message}`); return; }
+    setUsers((prev) => prev.filter((u) => u.id !== profileId));
+    setMaterials((prev) => prev.filter((m) => m.user_id !== profileId));
+    toast.success("User removed from platform");
+  };
+
+  const handleRevokeAdmin = async (profileId: string) => {
+    if (profileId === user?.id) {
+      toast.error("You cannot revoke your own admin role");
+      return;
+    }
+    const { error } = await supabase
+      .from("user_roles")
+      .delete()
+      .eq("user_id", profileId)
+      .eq("role", "admin");
+    if (error) { toast.error(`Failed: ${error.message}`); return; }
+    setUsers((prev) => prev.map((u) => u.id === profileId
+      ? { ...u, roles: (u.roles ?? []).filter((r) => r !== "admin"), role: (u.roles ?? []).filter((r) => r !== "admin").includes("lister") ? "lister" : "seeker" }
+      : u));
+    toast.success("Admin role revoked");
   };
 
   const handleMakeAdmin = async (profileId: string) => {
@@ -219,6 +293,28 @@ const Admin = () => {
   };
 
   if (authLoading || role !== "admin") return null;
+
+  const filteredUsers = users.filter((u) => {
+    if (!userSearch.trim()) return true;
+    const q = userSearch.toLowerCase();
+    return (
+      (u.full_name ?? "").toLowerCase().includes(q) ||
+      (u.company ?? "").toLowerCase().includes(q) ||
+      (u.location ?? "").toLowerCase().includes(q) ||
+      (u.role ?? "").toLowerCase().includes(q)
+    );
+  });
+
+  const filteredMaterials = materials.filter((m) => {
+    if (!materialSearch.trim()) return true;
+    const q = materialSearch.toLowerCase();
+    return (
+      m.title.toLowerCase().includes(q) ||
+      m.category.toLowerCase().includes(q) ||
+      (m.location ?? "").toLowerCase().includes(q) ||
+      m.status.toLowerCase().includes(q)
+    );
+  });
 
   const V = ({ v }: { v: number | string }) => (
     <span>{loadingData ? "…" : v}</span>
@@ -420,7 +516,18 @@ const Admin = () => {
             <TabsContent value="users">
               <Card>
                 <CardHeader>
-                  <CardTitle>All Users ({users.length})</CardTitle>
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <CardTitle>All Users ({filteredUsers.length} / {users.length})</CardTitle>
+                    <div className="relative w-full md:w-72">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        value={userSearch}
+                        onChange={(e) => setUserSearch(e.target.value)}
+                        placeholder="Search name, company, role…"
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
@@ -436,7 +543,7 @@ const Admin = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {users.map((u) => (
+                        {filteredUsers.map((u) => (
                           <tr
                             key={u.id}
                             className="border-b border-border/50 hover:bg-muted/30 transition-colors"
@@ -460,18 +567,54 @@ const Admin = () => {
                               {new Date(u.created_at).toLocaleDateString()}
                             </td>
                             <td className="py-2 px-3">
-                              {u.role === "admin" ? (
-                                <Badge variant="outline">Admin active</Badge>
-                              ) : (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  disabled={updatingRoleId === u.id}
-                                  onClick={() => handleMakeAdmin(u.id)}
-                                >
-                                  Make Admin
-                                </Button>
-                              )}
+                              <div className="flex items-center gap-2">
+                                {u.roles?.includes("admin") ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={u.id === user?.id}
+                                    onClick={() => handleRevokeAdmin(u.id)}
+                                  >
+                                    <ShieldOff className="w-3.5 h-3.5 mr-1" />
+                                    Revoke
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={updatingRoleId === u.id}
+                                    onClick={() => handleMakeAdmin(u.id)}
+                                  >
+                                    Make Admin
+                                  </Button>
+                                )}
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="text-destructive hover:text-destructive"
+                                      disabled={u.id === user?.id}
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Remove user "{u.full_name || 'Unnamed'}"?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This deletes the user's profile, all their listings and roles. The auth account stays but loses access. This cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleRemoveUser(u.id)}>
+                                        Remove
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -485,7 +628,18 @@ const Admin = () => {
             <TabsContent value="materials">
               <Card>
                 <CardHeader>
-                  <CardTitle>All Materials ({materials.length})</CardTitle>
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <CardTitle>All Materials ({filteredMaterials.length} / {materials.length})</CardTitle>
+                    <div className="relative w-full md:w-72">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        value={materialSearch}
+                        onChange={(e) => setMaterialSearch(e.target.value)}
+                        placeholder="Search title, category, status…"
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
@@ -501,7 +655,7 @@ const Admin = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {materials.map((m) => (
+                        {filteredMaterials.map((m) => (
                           <tr
                             key={m.id}
                             className="border-b border-border/50 hover:bg-muted/30 transition-colors"
@@ -531,7 +685,15 @@ const Admin = () => {
                               {m.location || "—"}
                             </td>
                             <td className="py-2 px-3">
-                              <AlertDialog>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setEditingMaterial(m)}
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </Button>
+                                <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button
                                     variant="ghost"
@@ -564,6 +726,7 @@ const Admin = () => {
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -646,6 +809,86 @@ const Admin = () => {
           </Tabs>
         </motion.div>
       </main>
+
+      <Dialog open={!!editingMaterial} onOpenChange={(open) => !open && setEditingMaterial(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Material</DialogTitle>
+          </DialogHeader>
+          {editingMaterial && (
+            <div className="space-y-4 py-2">
+              <div className="space-y-1.5">
+                <Label>Title</Label>
+                <Input
+                  value={editingMaterial.title}
+                  onChange={(e) => setEditingMaterial({ ...editingMaterial, title: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Category</Label>
+                  <Input
+                    value={editingMaterial.category}
+                    onChange={(e) => setEditingMaterial({ ...editingMaterial, category: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Status</Label>
+                  <Select
+                    value={editingMaterial.status}
+                    onValueChange={(v) => setEditingMaterial({ ...editingMaterial, status: v })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="paused">Paused</SelectItem>
+                      <SelectItem value="claimed">Claimed</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Price Type</Label>
+                  <Select
+                    value={editingMaterial.price_type}
+                    onValueChange={(v) => setEditingMaterial({ ...editingMaterial, price_type: v })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="free">Free</SelectItem>
+                      <SelectItem value="paid">Paid</SelectItem>
+                      <SelectItem value="negotiable">Negotiable</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Quantity</Label>
+                  <Input
+                    value={editingMaterial.quantity ?? ""}
+                    onChange={(e) => setEditingMaterial({ ...editingMaterial, quantity: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Location</Label>
+                <Input
+                  value={editingMaterial.location ?? ""}
+                  onChange={(e) => setEditingMaterial({ ...editingMaterial, location: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingMaterial(null)}>Cancel</Button>
+            <Button onClick={handleSaveMaterial} disabled={savingMaterial}>
+              {savingMaterial ? "Saving…" : "Save changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Footer />
     </div>
   );
