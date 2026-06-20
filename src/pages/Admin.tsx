@@ -516,7 +516,18 @@ const Admin = () => {
             <TabsContent value="users">
               <Card>
                 <CardHeader>
-                  <CardTitle>All Users ({users.length})</CardTitle>
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <CardTitle>All Users ({filteredUsers.length} / {users.length})</CardTitle>
+                    <div className="relative w-full md:w-72">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        value={userSearch}
+                        onChange={(e) => setUserSearch(e.target.value)}
+                        placeholder="Search name, company, role…"
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
@@ -532,7 +543,7 @@ const Admin = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {users.map((u) => (
+                        {filteredUsers.map((u) => (
                           <tr
                             key={u.id}
                             className="border-b border-border/50 hover:bg-muted/30 transition-colors"
@@ -556,18 +567,54 @@ const Admin = () => {
                               {new Date(u.created_at).toLocaleDateString()}
                             </td>
                             <td className="py-2 px-3">
-                              {u.role === "admin" ? (
-                                <Badge variant="outline">Admin active</Badge>
-                              ) : (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  disabled={updatingRoleId === u.id}
-                                  onClick={() => handleMakeAdmin(u.id)}
-                                >
-                                  Make Admin
-                                </Button>
-                              )}
+                              <div className="flex items-center gap-2">
+                                {u.roles?.includes("admin") ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={u.id === user?.id}
+                                    onClick={() => handleRevokeAdmin(u.id)}
+                                  >
+                                    <ShieldOff className="w-3.5 h-3.5 mr-1" />
+                                    Revoke
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={updatingRoleId === u.id}
+                                    onClick={() => handleMakeAdmin(u.id)}
+                                  >
+                                    Make Admin
+                                  </Button>
+                                )}
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="text-destructive hover:text-destructive"
+                                      disabled={u.id === user?.id}
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Remove user "{u.full_name || 'Unnamed'}"?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This deletes the user's profile, all their listings and roles. The auth account stays but loses access. This cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleRemoveUser(u.id)}>
+                                        Remove
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -581,7 +628,18 @@ const Admin = () => {
             <TabsContent value="materials">
               <Card>
                 <CardHeader>
-                  <CardTitle>All Materials ({materials.length})</CardTitle>
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <CardTitle>All Materials ({filteredMaterials.length} / {materials.length})</CardTitle>
+                    <div className="relative w-full md:w-72">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        value={materialSearch}
+                        onChange={(e) => setMaterialSearch(e.target.value)}
+                        placeholder="Search title, category, status…"
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
@@ -597,7 +655,7 @@ const Admin = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {materials.map((m) => (
+                        {filteredMaterials.map((m) => (
                           <tr
                             key={m.id}
                             className="border-b border-border/50 hover:bg-muted/30 transition-colors"
@@ -627,7 +685,15 @@ const Admin = () => {
                               {m.location || "—"}
                             </td>
                             <td className="py-2 px-3">
-                              <AlertDialog>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setEditingMaterial(m)}
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </Button>
+                                <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button
                                     variant="ghost"
@@ -660,6 +726,7 @@ const Admin = () => {
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>
+                              </div>
                             </td>
                           </tr>
                         ))}
