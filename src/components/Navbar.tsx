@@ -83,9 +83,13 @@ const Navbar = () => {
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2">
-                    <User className="w-4 h-4" />
-                    {role ? role.charAt(0).toUpperCase() + role.slice(1) : "Account"}
+                  <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 p-0 overflow-hidden">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={avatarUrl ?? undefined} alt={user.email ?? "User"} />
+                      <AvatarFallback className="bg-muted text-foreground">
+                        <User className="w-5 h-5" />
+                      </AvatarFallback>
+                    </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-card">
