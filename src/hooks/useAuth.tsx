@@ -52,12 +52,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
       if (newSession?.user) {
-        // Defer role fetch to avoid deadlocks
+        // Defer profile fetch to avoid deadlocks
         setTimeout(() => {
-          loadRole(newSession.user.id).finally(() => setLoading(false));
+          loadProfile(newSession.user.id).finally(() => setLoading(false));
         }, 0);
       } else {
         setRole(null);
+        setAvatarUrl(null);
         setLoading(false);
       }
     });
@@ -67,7 +68,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(existing);
       setUser(existing?.user ?? null);
       if (existing?.user) {
-        await loadRole(existing.user.id);
+        await loadProfile(existing.user.id);
       }
       setLoading(false);
     });
@@ -80,7 +81,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, role, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, role, avatarUrl, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
