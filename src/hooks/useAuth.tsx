@@ -8,6 +8,7 @@ interface AuthContextValue {
   user: User | null;
   session: Session | null;
   role: Role;
+  avatarUrl: string | null;
   loading: boolean;
   signOut: () => Promise<void>;
 }
@@ -18,14 +19,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<Role>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadRole = async (userId: string) => {
-    const { data } = await supabase
+  const loadProfile = async (userId: string) => {
+    const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId);
-    const roles = (data ?? []).map((r: { role: string }) => r.role);
+    const roles = (roleData ?? []).map((r: { role: string }) => r.role);
     const best = roles.includes("admin")
       ? "admin"
       : roles.includes("lister")
@@ -34,6 +36,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           ? "seeker"
           : null;
     setRole(best as Role);
+
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("avatar_url")
+      .eq("id", userId)
+      .maybeSingle();
+    setAvatarUrl(profileData?.avatar_url ?? null);
   };
 
   useEffect(() => {
