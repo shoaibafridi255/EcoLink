@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadProfile = async (userId: string) => {
+  const loadProfile = async (userId: string, meta?: { avatar_url?: string; picture?: string }) => {
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
@@ -42,7 +42,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .select("avatar_url")
       .eq("id", userId)
       .maybeSingle();
-    setAvatarUrl(profileData?.avatar_url ?? null);
+
+    const metaAvatar = meta?.avatar_url || meta?.picture || null;
+    setAvatarUrl(profileData?.avatar_url || metaAvatar || null);
   };
 
   useEffect(() => {
