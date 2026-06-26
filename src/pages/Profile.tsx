@@ -277,38 +277,54 @@ const Profile = () => {
                 <CardHeader>
                   <CardTitle>Profile Information</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label>Email</Label>
-                    <Input value={user?.email ?? ""} disabled className="bg-muted" />
+                <CardContent className="space-y-6">
+                  {/* Avatar */}
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-border bg-muted flex items-center justify-center">
+                      {profile.avatar_url ? (
+                        <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        <User className="w-10 h-10 text-muted-foreground" />
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground text-center">
+                      {profile.avatar_url ? "Your profile picture from your account." : "No profile picture set."}
+                    </p>
                   </div>
-                  <div>
-                    <Label>Full Name</Label>
-                    <Input
-                      value={profile.full_name ?? ""}
-                      onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                      placeholder="Your full name"
-                    />
+
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Email</Label>
+                      <Input value={user?.email ?? ""} disabled className="bg-muted" />
+                    </div>
+                    <div>
+                      <Label>Full Name</Label>
+                      <Input
+                        value={profile.full_name ?? ""}
+                        onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                        placeholder="Your full name"
+                      />
+                    </div>
+                    <div>
+                      <Label>Company</Label>
+                      <Input
+                        value={profile.company ?? ""}
+                        onChange={(e) => setProfile({ ...profile, company: e.target.value })}
+                        placeholder="Company or organization"
+                      />
+                    </div>
+                    <div>
+                      <Label>Location</Label>
+                      <Input
+                        value={profile.location ?? ""}
+                        onChange={(e) => setProfile({ ...profile, location: e.target.value })}
+                        placeholder="City, Country"
+                      />
+                    </div>
+                    <Button variant="eco" onClick={handleSaveProfile} disabled={saving}>
+                      {saving ? "Saving…" : "Save Changes"}
+                    </Button>
                   </div>
-                  <div>
-                    <Label>Company</Label>
-                    <Input
-                      value={profile.company ?? ""}
-                      onChange={(e) => setProfile({ ...profile, company: e.target.value })}
-                      placeholder="Company or organization"
-                    />
-                  </div>
-                  <div>
-                    <Label>Location</Label>
-                    <Input
-                      value={profile.location ?? ""}
-                      onChange={(e) => setProfile({ ...profile, location: e.target.value })}
-                      placeholder="City, Country"
-                    />
-                  </div>
-                  <Button variant="eco" onClick={handleSaveProfile} disabled={saving}>
-                    {saving ? "Saving…" : "Save Changes"}
-                  </Button>
                 </CardContent>
               </Card>
             </TabsContent>
