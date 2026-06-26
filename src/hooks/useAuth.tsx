@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadProfile = async (userId: string) => {
+  const loadProfile = async (userId: string, meta?: { avatar_url?: string; picture?: string }) => {
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
@@ -42,7 +42,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .select("avatar_url")
       .eq("id", userId)
       .maybeSingle();
-    setAvatarUrl(profileData?.avatar_url ?? null);
+
+    const metaAvatar = meta?.avatar_url || meta?.picture || null;
+    setAvatarUrl(profileData?.avatar_url || metaAvatar || null);
   };
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (newSession?.user) {
         // Defer profile fetch to avoid deadlocks
         setTimeout(() => {
-          loadProfile(newSession.user.id).finally(() => setLoading(false));
+          loadProfile(newSession.user.id, newSession.user.user_metadata).finally(() => setLoading(false));
         }, 0);
       } else {
         setRole(null);
@@ -68,7 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(existing);
       setUser(existing?.user ?? null);
       if (existing?.user) {
-        await loadProfile(existing.user.id);
+        await loadProfile(existing.user.id, existing.user.user_metadata);
       }
       setLoading(false);
     });
