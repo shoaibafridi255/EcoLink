@@ -15,6 +15,7 @@ import Profile from "./pages/Profile";
 import MaterialDetail from "./pages/MaterialDetail";
 import Messages from "./pages/Messages";
 import Admin from "./pages/Admin";
+import AdminSetPassword from "./pages/AdminSetPassword";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/materials/:id" element={<MaterialDetail />} />
             <Route path="/messages" element={<Messages />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/admin/set-password" element={<AdminSetPassword />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
