@@ -36,7 +36,8 @@ const HowItWorksPage = () => {
             How <span className="text-gradient-eco">EcoLink</span> Works
           </motion.h1>
           <p className="text-muted-foreground text-lg">
-            A transparent, four-step process designed for both businesses with surplus materials and those seeking affordable resources.
+            A transparent, four-step process designed for both businesses with
+            surplus materials and those seeking affordable resources.
           </p>
         </section>
 
@@ -45,7 +46,9 @@ const HowItWorksPage = () => {
         <section className="container mx-auto px-4 py-20">
           <div className="grid md:grid-cols-2 gap-8">
             <div className="bg-card border border-border rounded-2xl p-8 shadow-card">
-              <h2 className="font-display text-2xl font-bold mb-6">For Listers</h2>
+              <h2 className="font-display text-2xl font-bold mb-6">
+                For Listers
+              </h2>
               <ul className="space-y-4">
                 {listerSteps.map((step, i) => (
                   <li key={i} className="flex gap-3">
@@ -55,11 +58,15 @@ const HowItWorksPage = () => {
                 ))}
               </ul>
               <Button variant="eco" className="mt-6 w-full" asChild>
-                <Link to="/auth?mode=signup">Become a Lister <ArrowRight className="w-4 h-4" /></Link>
+                <Link to="/auth?mode=signup">
+                  Become a Lister <ArrowRight className="w-4 h-4" />
+                </Link>
               </Button>
             </div>
             <div className="bg-card border border-border rounded-2xl p-8 shadow-card">
-              <h2 className="font-display text-2xl font-bold mb-6">For Seekers</h2>
+              <h2 className="font-display text-2xl font-bold mb-6">
+                For Seekers
+              </h2>
               <ul className="space-y-4">
                 {seekerSteps.map((step, i) => (
                   <li key={i} className="flex gap-3">
@@ -69,7 +76,9 @@ const HowItWorksPage = () => {
                 ))}
               </ul>
               <Button variant="eco" className="mt-6 w-full" asChild>
-                <Link to="/auth?mode=signup">Become a Seeker <ArrowRight className="w-4 h-4" /></Link>
+                <Link to="/auth?mode=signup">
+                  Become a Seeker <ArrowRight className="w-4 h-4" />
+                </Link>
               </Button>
             </div>
           </div>

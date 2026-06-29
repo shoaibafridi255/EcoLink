@@ -45,9 +45,9 @@ const HowItWorks = () => {
           viewport={{ once: true }}
           className="text-center max-w-2xl mx-auto mb-16"
         >
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+          {/* <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
             How <span className="text-gradient-eco">EcoLink</span> Works
-          </h2>
+          </h2> */}
           <p className="text-muted-foreground text-lg">
             A simple four-step process to transform your waste into valuable
             resources for others.
