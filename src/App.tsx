@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import HowItWorksPage from "./pages/HowItWorksPage";
 import About from "./pages/About";
 import Browse from "./pages/Browse";
@@ -27,6 +28,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/how-it-works" element={<HowItWorksPage />} />
             <Route path="/about" element={<About />} />
             <Route path="/browse" element={<Browse />} />
