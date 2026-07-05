@@ -89,11 +89,21 @@ const AdminSetPassword = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="new-password">New password</Label>
-                  <Input id="new-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                  <div className="relative">
+                    <Input id="new-password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required className="pr-10" />
+                    <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirm-password">Confirm password</Label>
-                  <Input id="confirm-password" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
+                  <div className="relative">
+                    <Input id="confirm-password" type={showConfirm ? "text" : "password"} value={confirm} onChange={(e) => setConfirm(e.target.value)} required className="pr-10" />
+                    <button type="button" onClick={() => setShowConfirm((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
                 <Button type="submit" variant="eco" className="w-full" disabled={submitting}>
                   {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
