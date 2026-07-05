@@ -32,6 +32,8 @@ const Auth = () => {
   const initialRole: "lister" | "seeker" = "seeker";
   const [tab, setTab] = useState(initialTab);
   const [submitting, setSubmitting] = useState(false);
+  const [showSignInPassword, setShowSignInPassword] = useState(false);
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false);
 
   // Form state
   const [email, setEmail] = useState("");
