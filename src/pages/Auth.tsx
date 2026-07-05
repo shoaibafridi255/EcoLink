@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Recycle, Loader2 } from "lucide-react";
+import { Recycle, Loader2, Eye, EyeOff } from "lucide-react";
 
 const signInSchema = z.object({
   email: z.string().trim().email("Invalid email").max(255),
