@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Recycle, Loader2, ShieldAlert, Eye, EyeOff } from "lucide-react";
+import { PasswordStrengthMeter } from "@/components/PasswordStrengthMeter";
 
 const ADMIN_EMAIL = "shoaibafridi150@gmail.com";
 
