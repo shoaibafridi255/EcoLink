@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Recycle, Loader2, ShieldAlert } from "lucide-react";
+import { Recycle, Loader2, ShieldAlert, Eye, EyeOff } from "lucide-react";
 
 const ADMIN_EMAIL = "shoaibafridi150@gmail.com";
 
@@ -15,6 +15,8 @@ const AdminSetPassword = () => {
   const { user, loading } = useAuth();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
