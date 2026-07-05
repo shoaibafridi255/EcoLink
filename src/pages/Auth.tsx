@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Recycle, Loader2 } from "lucide-react";
+import { Recycle, Loader2, Eye, EyeOff } from "lucide-react";
 
 const signInSchema = z.object({
   email: z.string().trim().email("Invalid email").max(255),
@@ -32,6 +32,8 @@ const Auth = () => {
   const initialRole: "lister" | "seeker" = "seeker";
   const [tab, setTab] = useState(initialTab);
   const [submitting, setSubmitting] = useState(false);
+  const [showSignInPassword, setShowSignInPassword] = useState(false);
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false);
 
   // Form state
   const [email, setEmail] = useState("");
@@ -168,7 +170,12 @@ const Auth = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="si-password">Password</Label>
-                  <Input id="si-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                  <div className="relative">
+                    <Input id="si-password" type={showSignInPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required className="pr-10" />
+                    <button type="button" onClick={() => setShowSignInPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {showSignInPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
                 <Button type="submit" variant="eco" className="w-full" disabled={submitting}>
                   {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -196,7 +203,12 @@ const Auth = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="su-password">Password</Label>
-                  <Input id="su-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                  <div className="relative">
+                    <Input id="su-password" type={showSignUpPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required className="pr-10" />
+                    <button type="button" onClick={() => setShowSignUpPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {showSignUpPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
