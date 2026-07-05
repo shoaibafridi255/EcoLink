@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { Recycle, Loader2, Eye, EyeOff } from "lucide-react";
+import { PasswordStrengthMeter } from "@/components/PasswordStrengthMeter";
 
 const signInSchema = z.object({
   email: z.string().trim().email("Invalid email").max(255),
@@ -209,6 +210,7 @@ const Auth = () => {
                       {showSignUpPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  <PasswordStrengthMeter password={password} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
