@@ -210,6 +210,7 @@ const Auth = () => {
                       {showSignUpPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  <PasswordStrengthMeter password={password} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
