@@ -92,6 +92,7 @@ const Profile = () => {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate("/auth");
@@ -139,6 +140,49 @@ const Profile = () => {
     setSaving(false);
     if (error) toast.error("Failed to update profile");
     else toast.success("Profile updated!");
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5 MB");
+      return;
+    }
+    setAvatarUploading(true);
+    const ext = file.name.split(".").pop() ?? "jpg";
+    const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+    if (upErr) {
+      setAvatarUploading(false);
+      toast.error("Upload failed");
+      return;
+    }
+    const { data: signed, error: signErr } = await supabase.storage
+      .from("avatars")
+      .createSignedUrl(path, 60 * 60 * 24 * 365);
+    if (signErr || !signed) {
+      setAvatarUploading(false);
+      toast.error("Could not generate image URL");
+      return;
+    }
+    const url = signed.signedUrl;
+    const { error: updErr } = await supabase
+      .from("profiles")
+      .update({ avatar_url: url })
+      .eq("id", user.id);
+    setAvatarUploading(false);
+    if (updErr) {
+      toast.error("Could not save profile picture");
+      return;
+    }
+    setProfile((p) => ({ ...p, avatar_url: url }));
+    toast.success("Profile picture updated!");
   };
 
   const openAddMaterial = () => {
@@ -287,8 +331,30 @@ const Profile = () => {
                         <User className="w-10 h-10 text-muted-foreground" />
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground text-center">
-                      {profile.avatar_url ? "Your profile picture from your account." : "No profile picture set."}
+                    <input
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarUpload}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      disabled={avatarUploading}
+                      onClick={() => document.getElementById("avatar-upload")?.click()}
+                    >
+                      <ImagePlus className="w-4 h-4" />
+                      {avatarUploading
+                        ? "Uploading…"
+                        : profile.avatar_url
+                          ? "Change picture"
+                          : "Upload picture"}
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">
+                      PNG or JPG, up to 5 MB.
                     </p>
                   </div>
 
