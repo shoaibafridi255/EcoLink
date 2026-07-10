@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
   DialogContent,
@@ -93,6 +94,7 @@ const Profile = () => {
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarProgress, setAvatarProgress] = useState(0);
 
   useEffect(() => {
     if (!loading && !user) navigate("/auth");
@@ -155,10 +157,17 @@ const Profile = () => {
       return;
     }
     setAvatarUploading(true);
+    setAvatarProgress(5);
+    // Simulated progress — supabase-js upload doesn't expose upload events.
+    const timer = setInterval(() => {
+      setAvatarProgress((p) => (p < 90 ? p + Math.max(1, (90 - p) * 0.15) : p));
+    }, 200);
     const ext = file.name.split(".").pop() ?? "jpg";
     const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
     const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
     if (upErr) {
+      clearInterval(timer);
+      setAvatarProgress(0);
       setAvatarUploading(false);
       toast.error("Upload failed");
       return;
@@ -167,6 +176,8 @@ const Profile = () => {
       .from("avatars")
       .createSignedUrl(path, 60 * 60 * 24 * 365);
     if (signErr || !signed) {
+      clearInterval(timer);
+      setAvatarProgress(0);
       setAvatarUploading(false);
       toast.error("Could not generate image URL");
       return;
@@ -176,13 +187,17 @@ const Profile = () => {
       .from("profiles")
       .update({ avatar_url: url })
       .eq("id", user.id);
+    clearInterval(timer);
+    setAvatarProgress(100);
     setAvatarUploading(false);
     if (updErr) {
+      setAvatarProgress(0);
       toast.error("Could not save profile picture");
       return;
     }
     setProfile((p) => ({ ...p, avatar_url: url }));
     toast.success("Profile picture updated!");
+    setTimeout(() => setAvatarProgress(0), 800);
   };
 
   const openAddMaterial = () => {
@@ -353,6 +368,14 @@ const Profile = () => {
                           ? "Change picture"
                           : "Upload picture"}
                     </Button>
+                    {(avatarUploading || avatarProgress > 0) && (
+                      <div className="w-48 space-y-1">
+                        <Progress value={avatarProgress} className="h-2" />
+                        <p className="text-xs text-muted-foreground text-center">
+                          {Math.round(avatarProgress)}%
+                        </p>
+                      </div>
+                    )}
                     <p className="text-xs text-muted-foreground text-center">
                       PNG or JPG, up to 5 MB.
                     </p>
