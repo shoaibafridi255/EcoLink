@@ -11,6 +11,8 @@ interface Ctx {
 
 const MessageNotifCtx = createContext<Ctx>({ unread: 0, clear: () => {} });
 
+const lastSeenKey = (uid: string) => `msg-last-seen-${uid}`;
+
 export const MessageNotificationsProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const [unread, setUnread] = useState(0);
@@ -27,6 +29,24 @@ export const MessageNotificationsProvider = ({ children }: { children: ReactNode
       return;
     }
 
+    // Initial unread count: messages created since user's last visit to /messages
+    (async () => {
+      const lastSeen = localStorage.getItem(lastSeenKey(user.id)) ?? new Date(0).toISOString();
+      const { data: convs } = await supabase
+        .from("conversations")
+        .select("id")
+        .or(`seeker_id.eq.${user.id},lister_id.eq.${user.id}`);
+      if (!convs || convs.length === 0) return;
+      const ids = convs.map((c) => c.id);
+      const { count } = await supabase
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .in("conversation_id", ids)
+        .neq("sender_id", user.id)
+        .gt("created_at", lastSeen);
+      if (count && count > 0) setUnread(count);
+    })();
+
     const channel = supabase
       .channel(`msg-notif-${user.id}`)
       .on(
@@ -34,22 +54,16 @@ export const MessageNotificationsProvider = ({ children }: { children: ReactNode
         { event: "INSERT", schema: "public", table: "messages" },
         async (payload) => {
           try {
-            console.log("[msg-notif] INSERT received", payload);
             const msg = payload.new as { sender_id: string; conversation_id: string; content: string };
-            console.log("[msg-notif] msg fields", { sender_id: msg?.sender_id, conversation_id: msg?.conversation_id, currentUser: user.id });
-            if (!msg || !msg.sender_id) {
-              console.warn("[msg-notif] payload.new missing fields");
-              return;
-            }
+            if (!msg || !msg.sender_id) return;
             if (msg.sender_id === user.id) return;
 
           // Verify this conversation belongs to the user (RLS should already ensure this)
-          const { data: conv, error: convErr } = await supabase
+          const { data: conv } = await supabase
             .from("conversations")
             .select("id, seeker_id, lister_id, material_id")
             .eq("id", msg.conversation_id)
             .maybeSingle();
-          console.log("[msg-notif] conv lookup", { conv, convErr });
           if (!conv) return;
           if (conv.seeker_id !== user.id && conv.lister_id !== user.id) return;
 
@@ -65,7 +79,6 @@ export const MessageNotificationsProvider = ({ children }: { children: ReactNode
             .eq("id", msg.sender_id)
             .maybeSingle();
             const senderName = prof?.company || prof?.full_name || "New message";
-            console.log("[msg-notif] toasting", senderName);
             setUnread((u) => u + 1);
             toast(senderName, {
               description: msg.content.length > 80 ? msg.content.slice(0, 80) + "…" : msg.content,
@@ -79,9 +92,7 @@ export const MessageNotificationsProvider = ({ children }: { children: ReactNode
           }
         }
       )
-      .subscribe((status) => {
-        console.log("[msg-notif] channel status:", status);
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
@@ -90,8 +101,11 @@ export const MessageNotificationsProvider = ({ children }: { children: ReactNode
 
   // Clear badge whenever user is on messages page
   useEffect(() => {
-    if (location.pathname === "/messages") setUnread(0);
-  }, [location.pathname, location.search]);
+    if (location.pathname === "/messages" && user) {
+      setUnread(0);
+      localStorage.setItem(lastSeenKey(user.id), new Date().toISOString());
+    }
+  }, [location.pathname, location.search, user]);
 
   return (
     <MessageNotifCtx.Provider value={{ unread, clear }}>{children}</MessageNotifCtx.Provider>
