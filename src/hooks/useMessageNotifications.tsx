@@ -33,9 +33,15 @@ export const MessageNotificationsProvider = ({ children }: { children: ReactNode
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
         async (payload) => {
-          console.log("[msg-notif] INSERT received", payload);
-          const msg = payload.new as { sender_id: string; conversation_id: string; content: string };
-          if (msg.sender_id === user.id) return;
+          try {
+            console.log("[msg-notif] INSERT received", payload);
+            const msg = payload.new as { sender_id: string; conversation_id: string; content: string };
+            console.log("[msg-notif] msg fields", { sender_id: msg?.sender_id, conversation_id: msg?.conversation_id, currentUser: user.id });
+            if (!msg || !msg.sender_id) {
+              console.warn("[msg-notif] payload.new missing fields");
+              return;
+            }
+            if (msg.sender_id === user.id) return;
 
           // Verify this conversation belongs to the user (RLS should already ensure this)
           const { data: conv, error: convErr } = await supabase
@@ -58,16 +64,19 @@ export const MessageNotificationsProvider = ({ children }: { children: ReactNode
             .select("full_name, company")
             .eq("id", msg.sender_id)
             .maybeSingle();
-          const senderName = prof?.company || prof?.full_name || "New message";
-          console.log("[msg-notif] toasting", senderName);
-          setUnread((u) => u + 1);
-          toast(senderName, {
-            description: msg.content.length > 80 ? msg.content.slice(0, 80) + "…" : msg.content,
-            action: {
-              label: "View",
-              onClick: () => navigate(`/messages?c=${msg.conversation_id}`),
-            },
-          });
+            const senderName = prof?.company || prof?.full_name || "New message";
+            console.log("[msg-notif] toasting", senderName);
+            setUnread((u) => u + 1);
+            toast(senderName, {
+              description: msg.content.length > 80 ? msg.content.slice(0, 80) + "…" : msg.content,
+              action: {
+                label: "View",
+                onClick: () => navigate(`/messages?c=${msg.conversation_id}`),
+              },
+            });
+          } catch (e) {
+            console.error("[msg-notif] handler error", e);
+          }
         }
       )
       .subscribe((status) => {
