@@ -33,6 +33,7 @@ export const MessageNotificationsProvider = ({ children }: { children: ReactNode
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
         async (payload) => {
+          console.log("[msg-notif] INSERT received", payload);
           const msg = payload.new as { sender_id: string; conversation_id: string; content: string };
           if (msg.sender_id === user.id) return;
 
@@ -68,7 +69,9 @@ export const MessageNotificationsProvider = ({ children }: { children: ReactNode
           });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("[msg-notif] channel status:", status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
