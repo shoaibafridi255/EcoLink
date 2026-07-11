@@ -38,11 +38,12 @@ export const MessageNotificationsProvider = ({ children }: { children: ReactNode
           if (msg.sender_id === user.id) return;
 
           // Verify this conversation belongs to the user (RLS should already ensure this)
-          const { data: conv } = await supabase
+          const { data: conv, error: convErr } = await supabase
             .from("conversations")
             .select("id, seeker_id, lister_id, material_id")
             .eq("id", msg.conversation_id)
             .maybeSingle();
+          console.log("[msg-notif] conv lookup", { conv, convErr });
           if (!conv) return;
           if (conv.seeker_id !== user.id && conv.lister_id !== user.id) return;
 
@@ -58,7 +59,7 @@ export const MessageNotificationsProvider = ({ children }: { children: ReactNode
             .eq("id", msg.sender_id)
             .maybeSingle();
           const senderName = prof?.company || prof?.full_name || "New message";
-
+          console.log("[msg-notif] toasting", senderName);
           setUnread((u) => u + 1);
           toast(senderName, {
             description: msg.content.length > 80 ? msg.content.slice(0, 80) + "…" : msg.content,
