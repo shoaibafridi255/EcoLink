@@ -12,6 +12,7 @@ import {
   Shield,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useMessageNotifications } from "@/hooks/useMessageNotifications";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   CommandDialog,
@@ -36,6 +37,7 @@ const Navbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const navigate = useNavigate();
   const { user, role, avatarUrl, signOut } = useAuth();
+  const { unread } = useMessageNotifications();
 
   const handleSignOut = async () => {
     await signOut();
@@ -100,7 +102,7 @@ const Navbar = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="rounded-full h-10 w-10 p-0 overflow-hidden"
+                    className="rounded-full h-10 w-10 p-0 overflow-hidden relative"
                   >
                     <Avatar className="h-10 w-10">
                       <AvatarImage
@@ -111,6 +113,11 @@ const Navbar = () => {
                         <User className="w-5 h-5" />
                       </AvatarFallback>
                     </Avatar>
+                    {unread > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center border-2 border-background">
+                        {unread > 9 ? "9+" : unread}
+                      </span>
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-card">
@@ -131,6 +138,11 @@ const Navbar = () => {
                   >
                     <MessageCircle className="w-4 h-4 mr-2" />
                     Messages
+                    {unread > 0 && (
+                      <span className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+                        {unread > 9 ? "9+" : unread}
+                      </span>
+                    )}
                   </DropdownMenuItem>
                   {role === "admin" && (
                     <DropdownMenuItem
@@ -226,6 +238,11 @@ const Navbar = () => {
                       }}
                     >
                       <MessageCircle className="w-4 h-4 mr-2" /> Messages
+                      {unread > 0 && (
+                        <span className="ml-2 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+                          {unread > 9 ? "9+" : unread}
+                        </span>
+                      )}
                     </Button>
                     {role === "admin" && (
                       <Button
