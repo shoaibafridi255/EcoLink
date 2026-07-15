@@ -46,11 +46,15 @@ const MaterialDetail = () => {
         setMaterial(data);
         const { data: profile } = await supabase.from("profiles").select("full_name, company, location").eq("id", data.user_id).maybeSingle();
         setListerProfile(profile);
+        // Track view for AI recommendations (fire-and-forget)
+        if (user && user.id !== data.user_id) {
+          supabase.from("material_views").insert({ user_id: user.id, material_id: data.id });
+        }
       }
       setLoading(false);
     };
     fetchMaterial();
-  }, [id]);
+  }, [id, user]);
 
   const handleExpressInterest = async () => {
     if (!user) { navigate("/auth"); return; }
