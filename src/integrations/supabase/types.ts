@@ -49,6 +49,35 @@ export type Database = {
           },
         ]
       }
+      material_views: {
+        Row: {
+          id: string
+          material_id: string
+          user_id: string
+          viewed_at: string
+        }
+        Insert: {
+          id?: string
+          material_id: string
+          user_id: string
+          viewed_at?: string
+        }
+        Update: {
+          id?: string
+          material_id?: string
+          user_id?: string
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_views_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       materials: {
         Row: {
           category: string
@@ -135,28 +164,34 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
           company: string | null
           created_at: string
           full_name: string | null
           id: string
+          interests: string | null
           location: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
           company?: string | null
           created_at?: string
           full_name?: string | null
           id: string
+          interests?: string | null
           location?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
           company?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
+          interests?: string | null
           location?: string | null
           updated_at?: string
         }
