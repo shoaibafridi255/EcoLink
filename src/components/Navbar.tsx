@@ -121,10 +121,6 @@ const Navbar = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-card">
-                  <DropdownMenuLabel className="truncate max-w-[200px]">
-                    {user.email}
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => navigate("/profile")}
                     className="cursor-pointer"
