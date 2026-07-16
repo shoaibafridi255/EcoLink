@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSignedMaterialUrl } from "@/lib/materialImage";
 
 interface MaterialRec {
   id: string;
@@ -27,6 +28,40 @@ interface BuyerRec {
   avatar_url: string | null;
   reason: string;
 }
+
+const MaterialRecCard = ({ m, i }: { m: MaterialRec; i: number }) => {
+  const rawImg = m.image_url || m.images?.[0];
+  const img = useSignedMaterialUrl(rawImg);
+  return (
+    <motion.div key={m.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+      <Link to={`/materials/${m.id}`}>
+        <Card className="h-full hover:shadow-hover transition-shadow overflow-hidden group">
+          {img && (
+            <div className="h-32 overflow-hidden bg-muted">
+              <img src={img} alt={m.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" />
+            </div>
+          )}
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="font-semibold text-foreground line-clamp-1">{m.title}</h3>
+              <Badge variant="secondary" className="capitalize shrink-0">{m.category}</Badge>
+            </div>
+            {m.location && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <MapPin className="w-3 h-3" />
+                {m.location}
+              </div>
+            )}
+            <p className="text-xs text-foreground/80 flex gap-1 items-start">
+              <Sparkles className="w-3 h-3 text-primary shrink-0 mt-0.5" />
+              <span className="line-clamp-2">{m.reason}</span>
+            </p>
+          </CardContent>
+        </Card>
+      </Link>
+    </motion.div>
+  );
+};
 
 const RecommendedSection = () => {
   const { user, session } = useAuth();
@@ -93,38 +128,9 @@ const RecommendedSection = () => {
           </Card>
         ) : mode === "materials" ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {(items as MaterialRec[]).map((m, i) => {
-              const img = m.image_url || m.images?.[0];
-              return (
-                <motion.div key={m.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                  <Link to={`/materials/${m.id}`}>
-                    <Card className="h-full hover:shadow-hover transition-shadow overflow-hidden group">
-                      {img && (
-                        <div className="h-32 overflow-hidden bg-muted">
-                          <img src={img} alt={m.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" />
-                        </div>
-                      )}
-                      <CardContent className="p-4 space-y-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <h3 className="font-semibold text-foreground line-clamp-1">{m.title}</h3>
-                          <Badge variant="secondary" className="capitalize shrink-0">{m.category}</Badge>
-                        </div>
-                        {m.location && (
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <MapPin className="w-3 h-3" />
-                            {m.location}
-                          </div>
-                        )}
-                        <p className="text-xs text-foreground/80 flex gap-1 items-start">
-                          <Sparkles className="w-3 h-3 text-primary shrink-0 mt-0.5" />
-                          <span className="line-clamp-2">{m.reason}</span>
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                </motion.div>
-              );
-            })}
+            {(items as MaterialRec[]).map((m, i) => (
+              <MaterialRecCard key={m.id} m={m} i={i} />
+            ))}
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">

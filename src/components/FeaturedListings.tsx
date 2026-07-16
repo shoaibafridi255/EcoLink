@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useSignedMaterialUrl } from "@/lib/materialImage";
 
 interface DBMaterial {
   id: string;
@@ -45,7 +46,9 @@ function timeAgo(dateStr: string) {
 }
 
 const ListingCard = ({ listing, index }: { listing: DBMaterial; index: number }) => {
-  const image = listing.images?.[0] || listing.image_url || "/placeholder.svg";
+  const rawImage = listing.images?.[0] || listing.image_url;
+  const signed = useSignedMaterialUrl(rawImage);
+  const image = signed || "/placeholder.svg";
   const pricingLabel = listing.price_type === "free" ? "Free" : listing.price_type === "fixed" ? `$${listing.price}` : "Negotiable";
   const catLabel = listing.category.charAt(0).toUpperCase() + listing.category.slice(1);
   return (

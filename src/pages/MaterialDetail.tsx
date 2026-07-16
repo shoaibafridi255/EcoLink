@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Tag, Clock, Building2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { signMany } from "@/lib/materialImage";
 
 interface MaterialRow {
   id: string;
@@ -36,6 +37,7 @@ const MaterialDetail = () => {
   const [loading, setLoading] = useState(true);
   const [selectedImg, setSelectedImg] = useState(0);
   const [expressing, setExpressing] = useState(false);
+  const [signedImages, setSignedImages] = useState<string[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -55,6 +57,17 @@ const MaterialDetail = () => {
     };
     fetchMaterial();
   }, [id, user]);
+
+  useEffect(() => {
+    if (!material) return;
+    const raw = material.images?.length ? material.images : material.image_url ? [material.image_url] : [];
+    if (raw.length === 0) { setSignedImages([]); return; }
+    let cancelled = false;
+    signMany(raw).then((urls) => {
+      if (!cancelled) setSignedImages(urls.filter((u): u is string => !!u));
+    });
+    return () => { cancelled = true; };
+  }, [material]);
 
   const handleExpressInterest = async () => {
     if (!user) { navigate("/auth"); return; }
@@ -90,7 +103,7 @@ const MaterialDetail = () => {
   if (loading) return <div className="min-h-screen bg-background"><Navbar /><p className="pt-24 text-center text-muted-foreground">Loading…</p></div>;
   if (!material) return <div className="min-h-screen bg-background"><Navbar /><p className="pt-24 text-center text-muted-foreground">Material not found.</p></div>;
 
-  const images = material.images?.length ? material.images : material.image_url ? [material.image_url] : [];
+  const images = signedImages;
   const pricingLabel = material.price_type === "free" ? "Free" : material.price_type === "fixed" ? `$${material.price}` : "Negotiable";
 
   return (

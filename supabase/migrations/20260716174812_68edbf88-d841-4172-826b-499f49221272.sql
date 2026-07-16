@@ -1,0 +1,1 @@
+CREATE POLICY "Public can view material images" ON storage.objects FOR SELECT TO anon, authenticated USING (bucket_id = 'material-images');
