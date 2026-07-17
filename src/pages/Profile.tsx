@@ -690,3 +690,147 @@ const Profile = () => {
 };
 
 export default Profile;
+
+/* ────────────────────────────────────────────────────────────────
+ *  Bento sub-components
+ * ────────────────────────────────────────────────────────────── */
+
+const tileVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
+};
+
+const BentoTile = ({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => (
+  <motion.div
+    variants={tileVariants}
+    className={`rounded-3xl ${className}`}
+  >
+    {children}
+  </motion.div>
+);
+
+const StatTile = ({
+  label,
+  value,
+  icon,
+  gold = false,
+}: {
+  label: string;
+  value: React.ReactNode;
+  icon?: React.ReactNode;
+  gold?: boolean;
+}) => (
+  <BentoTile
+    className={
+      gold
+        ? "bg-gold/10 p-5 border border-gold/25 flex flex-col justify-between min-h-[110px]"
+        : "bg-white p-5 border border-ink/10 flex flex-col justify-between min-h-[110px]"
+    }
+  >
+    <div className="flex items-center justify-between">
+      <p className={`text-[10px] font-bold uppercase tracking-widest ${gold ? "text-gold" : "text-ink"}`}>
+        {label}
+      </p>
+      {icon}
+    </div>
+    <p className="text-3xl font-bold font-display text-ink-deep mt-4 leading-none">{value}</p>
+  </BentoTile>
+);
+
+const FieldRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="space-y-1.5">
+    <label className="text-[10px] uppercase font-bold text-ink tracking-wider">{label}</label>
+    {children}
+  </div>
+);
+
+const MessagesCounter = () => {
+  const { unread } = useMessageNotifications();
+  return <>{unread}</>;
+};
+
+const MaterialCard = ({
+  material,
+  onEdit,
+  onDelete,
+}: {
+  material: Material;
+  onEdit: () => void;
+  onDelete: () => void;
+}) => {
+  const firstImage = material.images?.[0] ?? null;
+  const signed = useSignedMaterialUrl(firstImage);
+  return (
+    <motion.div variants={tileVariants} className="group">
+      <div className="relative aspect-video w-full bg-cream rounded-2xl overflow-hidden mb-3">
+        {signed ? (
+          <img src={signed} alt={material.title} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-ink/30">
+            <Package className="w-8 h-8" />
+          </div>
+        )}
+        <div className="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-ink-deep">
+          {material.category}
+        </div>
+        <div className="absolute top-2 left-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={onEdit}
+            className="bg-white/95 backdrop-blur p-1.5 rounded-lg text-ink-deep hover:bg-gold hover:text-ink-deep transition-colors"
+            aria-label="Edit"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button
+                className="bg-white/95 backdrop-blur p-1.5 rounded-lg text-destructive hover:bg-destructive hover:text-white transition-colors"
+                aria-label="Delete"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete "{material.title}"?</AlertDialogTitle>
+                <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={onDelete}>Delete</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </div>
+      <h3 className="font-bold text-sm text-ink-deep truncate">{material.title}</h3>
+      <div className="flex items-center justify-between mt-1">
+        <span className="text-xs font-bold text-gold">
+          {material.price_type === "free"
+            ? "Free"
+            : material.price != null
+              ? `$${material.price}`
+              : material.price_type}
+        </span>
+        <span
+          className={`text-[10px] font-bold uppercase tracking-tight ${
+            material.status === "active" ? "text-ink" : "text-ink-deep/50"
+          }`}
+        >
+          {material.status}
+        </span>
+      </div>
+      {material.location && (
+        <p className="text-[11px] text-ink-deep/50 mt-1 flex items-center gap-1 truncate">
+          <MapPin className="w-3 h-3" /> {material.location}
+        </p>
+      )}
+    </motion.div>
+  );
+};
