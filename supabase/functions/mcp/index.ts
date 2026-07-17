@@ -3,7 +3,7 @@
 // supabase function: mcp
 // Bundled from src/lib/mcp/index.ts by @lovable.dev/mcp-js.
 // src/lib/mcp/index.ts
-import { defineMcp } from "npm:@lovable.dev/mcp-js@0.20.1";
+import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.20.1";
 
 // src/lib/mcp/tools/list-materials.ts
 import { createClient } from "npm:@supabase/supabase-js@^2.105.1";
@@ -101,12 +101,18 @@ var get_material_default = defineTool3({
 });
 
 // src/lib/mcp/index.ts
+var supabaseUrl = process.env.SUPABASE_URL ?? "https://supabase.invalid";
 var mcp_default = defineMcp({
   name: "ecolink-mcp",
   title: "EcoLink MCP",
   version: "0.1.0",
   instructions: "Tools for EcoLink, a waste-to-resource marketplace. Use list_materials to browse active listings, search_materials for keyword search, and get_material for full details of a specific listing.",
-  tools: [list_materials_default, search_materials_default, get_material_default]
+  tools: [list_materials_default, search_materials_default, get_material_default],
+  auth: auth.oauth.issuer({
+    issuer: `${supabaseUrl}/auth/v1`,
+    acceptedAudiences: "authenticated",
+    jwksUri: `${supabaseUrl}/auth/v1/.well-known/jwks.json`
+  })
 });
 
 // lovable-mcp-supabase-entry.ts
