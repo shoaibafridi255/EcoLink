@@ -68,6 +68,12 @@ export default {
           sand: "hsl(var(--eco-sand))",
           sky: "hsl(var(--eco-sky))",
         },
+        ink: {
+          deep: "hsl(var(--ink-deep))",
+          DEFAULT: "hsl(var(--ink))",
+        },
+        gold: "hsl(var(--gold))",
+        cream: "hsl(var(--cream))",
       },
       borderRadius: {
         lg: "var(--radius)",
