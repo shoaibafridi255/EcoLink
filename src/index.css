@@ -42,6 +42,12 @@
     --eco-earth: 30 40% 45%;
     --eco-sand: 40 30% 92%;
     --eco-sky: 195 70% 55%;
+
+    /* Ecolink premium tokens (emerald + gold + cream) — used by profile bento */
+    --ink-deep: 158 84% 14%;      /* #064e3b */
+    --ink: 160 80% 26%;           /* #0d7a5f */
+    --gold: 43 55% 54%;           /* #c9a84c */
+    --cream: 45 60% 92%;          /* #f5f0e0 */
     
     /* Gradients */
     --gradient-eco: linear-gradient(135deg, hsl(158 64% 32%) 0%, hsl(173 58% 39%) 100%);
