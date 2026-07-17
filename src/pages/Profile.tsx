@@ -39,9 +39,26 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { User, Package, Plus, Pencil, Trash2, MapPin, ImagePlus, X } from "lucide-react";
+import {
+  User,
+  Package,
+  Plus,
+  Pencil,
+  Trash2,
+  MapPin,
+  ImagePlus,
+  X,
+  BadgeCheck,
+  MessageSquare,
+  Sparkles,
+  Eye,
+  Leaf,
+} from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+import { useMessageNotifications } from "@/hooks/useMessageNotifications";
+import { useSignedMaterialUrl } from "@/lib/materialImage";
 
 interface Profile {
   full_name: string | null;
@@ -311,197 +328,236 @@ const Profile = () => {
 
   if (loading) return null;
 
+  const activeCount = materials.filter((m) => m.status === "active").length;
+  const soldCount = materials.filter((m) => m.status === "sold").length;
+  const wasteDiverted = soldCount * 250; // proxy: 250kg per completed transaction
+  const displayName = profile.full_name?.trim() || user?.email?.split("@")[0] || "Member";
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-cream/40">
       <Navbar />
-      <main className="container mx-auto px-4 pt-24 pb-16 max-w-4xl">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-          <h1 className="text-3xl font-display font-bold text-foreground mb-2">My Profile</h1>
-          <p className="text-muted-foreground mb-8">
-            Manage your profile information and materials.
+      <main className="container mx-auto px-4 pt-24 pb-16 max-w-6xl">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: {},
+            visible: { transition: { staggerChildren: 0.06 } },
+          }}
+          className="grid grid-cols-1 md:grid-cols-12 gap-4"
+        >
+          {/* ─── Identity Tile ─── */}
+          <BentoTile className="md:col-span-4 bg-ink-deep text-cream p-6 flex flex-col items-center text-center shadow-lg">
+            <div className="relative">
+              <div className="w-24 h-24 rounded-2xl bg-ink p-1 ring-2 ring-gold overflow-hidden flex items-center justify-center">
+                {profile.avatar_url ? (
+                  <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover rounded-xl" />
+                ) : (
+                  <User className="w-10 h-10 text-cream/70" />
+                )}
+              </div>
+              <div className="absolute -bottom-2 -right-2 bg-gold text-ink-deep text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider shadow-sm inline-flex items-center gap-1">
+                <BadgeCheck className="w-3 h-3" /> Verified
+              </div>
+            </div>
+            <h1 className="mt-5 text-2xl font-bold font-display tracking-tight break-words">
+              {displayName}
+            </h1>
             {role && (
-              <Badge variant="secondary" className="ml-2 capitalize">{role}</Badge>
+              <p className="text-ink bg-cream px-3 py-0.5 rounded-full text-xs font-semibold mt-2 uppercase tracking-wide">
+                {role}
+              </p>
             )}
-          </p>
+            <div className="mt-6 w-full space-y-2 text-sm">
+              <div className="flex justify-between border-b border-ink/40 pb-2">
+                <span className="font-medium text-cream/70">Company</span>
+                <span className="text-cream truncate ml-2">{profile.company || "—"}</span>
+              </div>
+              <div className="flex justify-between border-b border-ink/40 pb-2">
+                <span className="font-medium text-cream/70">Location</span>
+                <span className="text-cream truncate ml-2">{profile.location || "—"}</span>
+              </div>
+              <div className="flex justify-between pb-2">
+                <span className="font-medium text-cream/70">Email</span>
+                <span className="text-cream truncate ml-2 text-xs">{user?.email}</span>
+              </div>
+            </div>
 
-          <Tabs defaultValue="profile" className="space-y-6">
-            <TabsList>
-              <TabsTrigger value="profile" className="gap-2"><User className="w-4 h-4" /> Profile</TabsTrigger>
-              <TabsTrigger value="materials" className="gap-2"><Package className="w-4 h-4" /> My Materials</TabsTrigger>
-            </TabsList>
+            <input
+              id="avatar-upload"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarUpload}
+            />
+            <Button
+              type="button"
+              size="sm"
+              className="mt-6 w-full gap-2 bg-cream text-ink-deep hover:bg-cream/90 rounded-xl font-bold"
+              disabled={avatarUploading}
+              onClick={() => document.getElementById("avatar-upload")?.click()}
+            >
+              <ImagePlus className="w-4 h-4" />
+              {avatarUploading
+                ? "Uploading…"
+                : profile.avatar_url
+                  ? "Change picture"
+                  : "Upload picture"}
+            </Button>
+            {(avatarUploading || avatarProgress > 0) && (
+              <div className="w-full mt-3 space-y-1">
+                <Progress value={avatarProgress} className="h-2 bg-ink" />
+                <p className="text-[10px] text-cream/70 text-center">{Math.round(avatarProgress)}%</p>
+              </div>
+            )}
+          </BentoTile>
 
-            {/* ─── Profile Tab ─── */}
-            <TabsContent value="profile">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Profile Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Avatar */}
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-border bg-muted flex items-center justify-center">
-                      {profile.avatar_url ? (
-                        <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                      ) : (
-                        <User className="w-10 h-10 text-muted-foreground" />
-                      )}
-                    </div>
-                    <input
-                      id="avatar-upload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleAvatarUpload}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="gap-2"
-                      disabled={avatarUploading}
-                      onClick={() => document.getElementById("avatar-upload")?.click()}
-                    >
-                      <ImagePlus className="w-4 h-4" />
-                      {avatarUploading
-                        ? "Uploading…"
-                        : profile.avatar_url
-                          ? "Change picture"
-                          : "Upload picture"}
-                    </Button>
-                    {(avatarUploading || avatarProgress > 0) && (
-                      <div className="w-48 space-y-1">
-                        <Progress value={avatarProgress} className="h-2" />
-                        <p className="text-xs text-muted-foreground text-center">
-                          {Math.round(avatarProgress)}%
-                        </p>
-                      </div>
-                    )}
-                    <p className="text-xs text-muted-foreground text-center">
-                      PNG or JPG, up to 5 MB.
-                    </p>
-                  </div>
+          {/* ─── Right column grid ─── */}
+          <div className="md:col-span-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Stat tiles */}
+            <StatTile
+              label="Waste Diverted"
+              value={
+                <>
+                  {wasteDiverted.toLocaleString()} <span className="text-sm font-semibold text-ink">kg</span>
+                </>
+              }
+              icon={<Leaf className="w-4 h-4 text-ink" />}
+            />
+            <StatTile label="Active Listings" value={activeCount} icon={<Package className="w-4 h-4 text-ink" />} />
+            <StatTile
+              gold
+              label="Total Listings"
+              value={materials.length}
+              icon={<Eye className="w-4 h-4 text-gold" />}
+            />
+            <StatTile
+              label="Conversations"
+              value={<MessagesCounter />}
+              icon={<MessageSquare className="w-4 h-4 text-ink" />}
+            />
 
-                  <div className="space-y-4">
-                    <div>
-                      <Label>Email</Label>
-                      <Input value={user?.email ?? ""} disabled className="bg-muted" />
-                    </div>
-                    <div>
-                      <Label>Full Name</Label>
-                      <Input
-                        value={profile.full_name ?? ""}
-                        onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                        placeholder="Your full name"
-                      />
-                    </div>
-                    <div>
-                      <Label>Company</Label>
-                      <Input
-                        value={profile.company ?? ""}
-                        onChange={(e) => setProfile({ ...profile, company: e.target.value })}
-                        placeholder="Company or organization"
-                      />
-                    </div>
-                    <div>
-                      <Label>Location</Label>
-                      <Input
-                        value={profile.location ?? ""}
-                        onChange={(e) => setProfile({ ...profile, location: e.target.value })}
-                        placeholder="City, Country"
-                      />
-                    </div>
-                    <Button variant="eco" onClick={handleSaveProfile} disabled={saving}>
-                      {saving ? "Saving…" : "Save Changes"}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* ─── Materials Tab ─── */}
-            <TabsContent value="materials">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-foreground">Your Listings</h2>
-                <Button variant="eco" size="sm" onClick={openAddMaterial} className="gap-1">
-                  <Plus className="w-4 h-4" /> Add Material
+            {/* Editable profile info tile */}
+            <BentoTile className="col-span-2 lg:col-span-3 bg-white p-6 border border-ink/10">
+              <div className="flex justify-between items-center mb-5">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-gold" />
+                  <h3 className="font-display font-bold text-lg text-ink-deep">Profile Information</h3>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSaveProfile}
+                  disabled={saving}
+                  className="text-ink hover:text-ink-deep hover:bg-cream font-bold"
+                >
+                  {saving ? "Saving…" : "Save Changes"}
                 </Button>
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                <FieldRow label="Email">
+                  <Input value={user?.email ?? ""} disabled className="bg-cream/50 border-transparent text-sm text-ink-deep/70" />
+                </FieldRow>
+                <FieldRow label="Full Name">
+                  <Input
+                    value={profile.full_name ?? ""}
+                    onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                    placeholder="Your full name"
+                    className="bg-cream/50 border-transparent focus-visible:border-ink text-sm"
+                  />
+                </FieldRow>
+                <FieldRow label="Company">
+                  <Input
+                    value={profile.company ?? ""}
+                    onChange={(e) => setProfile({ ...profile, company: e.target.value })}
+                    placeholder="Company or organization"
+                    className="bg-cream/50 border-transparent focus-visible:border-ink text-sm"
+                  />
+                </FieldRow>
+                <FieldRow label="Location">
+                  <Input
+                    value={profile.location ?? ""}
+                    onChange={(e) => setProfile({ ...profile, location: e.target.value })}
+                    placeholder="City, Country"
+                    className="bg-cream/50 border-transparent focus-visible:border-ink text-sm"
+                  />
+                </FieldRow>
+              </div>
+            </BentoTile>
 
-              {matLoading ? (
-                <p className="text-muted-foreground py-8 text-center">Loading…</p>
-              ) : materials.length === 0 ? (
-                <Card>
-                  <CardContent className="py-12 text-center">
-                    <Package className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
-                    <p className="text-muted-foreground">You haven't listed any materials yet.</p>
-                    <Button variant="eco" size="sm" className="mt-4 gap-1" onClick={openAddMaterial}>
-                      <Plus className="w-4 h-4" /> Add Your First Material
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="grid gap-4">
-                  {materials.map((m) => (
-                    <Card key={m.id} className="overflow-hidden">
-                      <CardContent className="flex items-start gap-4 py-4">
-                        {/* Thumbnail */}
-                        {(m.images?.length ?? 0) > 0 && (
-                          <img
-                            src={m.images![0]}
-                            alt={m.title}
-                            className="w-16 h-16 rounded-lg object-cover shrink-0 border border-border"
-                          />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <h3 className="font-semibold text-foreground truncate">{m.title}</h3>
-                            <Badge variant={m.status === "active" ? "default" : "secondary"} className="capitalize text-xs">
-                              {m.status}
-                            </Badge>
-                            <Badge variant="outline" className="capitalize text-xs">{m.category}</Badge>
-                          </div>
-                          {m.description && (
-                            <p className="text-sm text-muted-foreground line-clamp-2">{m.description}</p>
-                          )}
-                          <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                            {m.location && (
-                              <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{m.location}</span>
-                            )}
-                            {m.price_type === "free" ? "Free" : m.price != null ? `$${m.price}` : m.price_type}
-                            {m.quantity && <span>Qty: {m.quantity}</span>}
-                          </div>
-                        </div>
-                        <div className="flex gap-1 shrink-0">
-                          <Button variant="ghost" size="icon" onClick={() => openEditMaterial(m)}>
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete "{m.title}"?</AlertDialogTitle>
-                                <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteMaterial(m.id)}>
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
+            {/* Quick actions tile */}
+            <BentoTile className="col-span-2 lg:col-span-1 bg-ink p-5 text-white flex flex-col justify-center gap-3">
+              <p className="text-[10px] uppercase tracking-widest font-bold text-cream/70">Quick actions</p>
+              <Button
+                onClick={openAddMaterial}
+                className="w-full bg-gold text-ink-deep hover:brightness-110 rounded-2xl py-6 font-bold text-sm shadow-md"
+              >
+                <Plus className="w-4 h-4 mr-1" /> Post Material
+              </Button>
+              <Button
+                asChild
+                variant="ghost"
+                className="w-full bg-white/10 border border-white/20 rounded-2xl py-6 font-bold text-sm text-cream hover:bg-white/20 hover:text-cream"
+              >
+                <Link to="/messages">
+                  <MessageSquare className="w-4 h-4 mr-1" /> Messages
+                </Link>
+              </Button>
+            </BentoTile>
+          </div>
+
+          {/* ─── Materials Bento Tile ─── */}
+          <BentoTile className="md:col-span-12 bg-white p-6 md:p-8 border border-ink/10">
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+              <div>
+                <h2 className="text-2xl font-bold font-display tracking-tight text-ink-deep">My Materials</h2>
+                <p className="text-sm text-ink font-medium">Manage your resource listings</p>
+              </div>
+              <Button
+                onClick={openAddMaterial}
+                className="bg-ink-deep text-cream hover:bg-ink rounded-xl font-bold"
+              >
+                <Plus className="w-4 h-4 mr-1" /> Add Listing
+              </Button>
+            </div>
+
+            {matLoading ? (
+              <p className="text-ink py-8 text-center">Loading…</p>
+            ) : materials.length === 0 ? (
+              <div className="py-16 text-center border-2 border-dashed border-ink/15 rounded-2xl">
+                <Package className="w-12 h-12 mx-auto text-ink/40 mb-3" />
+                <p className="text-ink">You haven't listed any materials yet.</p>
+                <Button
+                  size="sm"
+                  className="mt-4 gap-1 bg-ink-deep text-cream hover:bg-ink rounded-xl"
+                  onClick={openAddMaterial}
+                >
+                  <Plus className="w-4 h-4" /> Add Your First Material
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                {materials.map((m) => (
+                  <MaterialCard
+                    key={m.id}
+                    material={m}
+                    onEdit={() => openEditMaterial(m)}
+                    onDelete={() => handleDeleteMaterial(m.id)}
+                  />
+                ))}
+                <button
+                  type="button"
+                  onClick={openAddMaterial}
+                  className="border-2 border-dashed border-ink/25 rounded-2xl flex flex-col items-center justify-center p-6 hover:bg-cream/50 transition-colors group cursor-pointer min-h-[180px]"
+                >
+                  <div className="w-8 h-8 rounded-full bg-ink/10 text-ink flex items-center justify-center font-bold text-xl mb-2 group-hover:scale-110 transition-transform">
+                    +
+                  </div>
+                  <span className="text-xs font-bold text-ink uppercase tracking-wider">Add Listing</span>
+                </button>
+              </div>
+            )}
+          </BentoTile>
         </motion.div>
 
         {/* ─── Add / Edit Material Dialog ─── */}
