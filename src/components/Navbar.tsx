@@ -102,9 +102,9 @@ const Navbar = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="rounded-full h-10 w-10 p-0 overflow-hidden relative"
+                    className="rounded-full h-10 w-10 p-0 relative"
                   >
-                    <Avatar className="h-10 w-10">
+                    <Avatar className="h-10 w-10 ring-1 ring-border">
                       <AvatarImage
                         src={avatarUrl ?? undefined}
                         alt={user.email ?? "User"}
@@ -114,7 +114,7 @@ const Navbar = () => {
                       </AvatarFallback>
                     </Avatar>
                     {unread > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center border-2 border-background">
+                      <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-[20px] px-1 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold flex items-center justify-center border-2 border-background shadow-sm">
                         {unread > 9 ? "9+" : unread}
                       </span>
                     )}
