@@ -14,6 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
+      company_profiles: {
+        Row: {
+          address: string | null
+          city: string | null
+          company_email: string | null
+          company_name: string
+          company_type: string
+          country: string | null
+          created_at: string
+          customer_count: number | null
+          description: string | null
+          employee_range: string | null
+          industry: string | null
+          logo_url: string | null
+          materials_handled: string[]
+          phone: string | null
+          postal_code: string | null
+          registration_doc_path: string | null
+          registration_number: string | null
+          registration_status: string
+          services: string[]
+          updated_at: string
+          user_id: string
+          website: string | null
+          year_established: number | null
+          zone: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          company_email?: string | null
+          company_name: string
+          company_type?: string
+          country?: string | null
+          created_at?: string
+          customer_count?: number | null
+          description?: string | null
+          employee_range?: string | null
+          industry?: string | null
+          logo_url?: string | null
+          materials_handled?: string[]
+          phone?: string | null
+          postal_code?: string | null
+          registration_doc_path?: string | null
+          registration_number?: string | null
+          registration_status?: string
+          services?: string[]
+          updated_at?: string
+          user_id: string
+          website?: string | null
+          year_established?: number | null
+          zone?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          company_email?: string | null
+          company_name?: string
+          company_type?: string
+          country?: string | null
+          created_at?: string
+          customer_count?: number | null
+          description?: string | null
+          employee_range?: string | null
+          industry?: string | null
+          logo_url?: string | null
+          materials_handled?: string[]
+          phone?: string | null
+          postal_code?: string | null
+          registration_doc_path?: string | null
+          registration_number?: string | null
+          registration_status?: string
+          services?: string[]
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+          year_established?: number | null
+          zone?: string | null
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
