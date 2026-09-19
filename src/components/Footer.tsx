@@ -139,11 +139,7 @@ const Footer = () => {
         {/* Bottom Bar */}
         <div className="border-t border-background/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-background/50 text-sm">
-            © 2024 EcoLink. Final Year Project by Muhammad Shoaib & Syed Iqbal
-            Shah
-          </p>
-          <p className="text-background/50 text-sm">
-            University of Agriculture, Peshawar
+            © 2024 EcoLink. All rights reserved By EcoLink.
           </p>
         </div>
       </div>
