@@ -530,7 +530,7 @@ const CompanyRegister = () => {
   return (
     <div className="min-h-screen bg-cream flex flex-col">
       <Navbar />
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-10">
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 pt-24 pb-10 md:pt-28">
         <div className="mb-8">
           <h1 className="font-display font-bold text-3xl md:text-4xl text-ink-deep tracking-tight">
             {isExisting ? "Company Profile" : "Company Registration"}
