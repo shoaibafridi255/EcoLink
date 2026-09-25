@@ -13,6 +13,7 @@ import HowItWorksPage from "./pages/HowItWorksPage";
 import About from "./pages/About";
 import Browse from "./pages/Browse";
 import Profile from "./pages/Profile";
+import CompanyRegister from "./pages/CompanyRegister";
 import MaterialDetail from "./pages/MaterialDetail";
 import Messages from "./pages/Messages";
 import Admin from "./pages/Admin";
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/browse" element={<Browse />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/company/register" element={<CompanyRegister />} />
             <Route path="/materials/:id" element={<MaterialDetail />} />
             <Route path="/messages" element={<Messages />} />
             <Route path="/admin" element={<Admin />} />

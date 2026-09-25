@@ -127,7 +127,12 @@ const Auth = () => {
       toast.error(error.message);
       return;
     }
-    if (data.user && data.session) await ensureProfileAndRole(data.user);
+    if (data.user && data.session) {
+      await ensureProfileAndRole(data.user);
+      toast.success("Account created! Let's complete your company profile.");
+      navigate("/company/register");
+      return;
+    }
     toast.success("Account created! Check your email to confirm.");
     setTab("signin");
   };

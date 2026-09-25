@@ -59,6 +59,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useMessageNotifications } from "@/hooks/useMessageNotifications";
 import { useSignedMaterialUrl } from "@/lib/materialImage";
+import CompanyProfileCard from "@/components/CompanyProfileCard";
 
 interface Profile {
   full_name: string | null;
@@ -505,6 +506,13 @@ const Profile = () => {
               </Button>
             </BentoTile>
           </div>
+
+          {/* ─── Company Profile Tile ─── */}
+          {user && (
+            <div className="md:col-span-12">
+              <CompanyProfileCard userId={user.id} />
+            </div>
+          )}
 
           {/* ─── Materials Bento Tile ─── */}
           <BentoTile className="md:col-span-12 bg-white p-6 md:p-8 border border-ink/10">
