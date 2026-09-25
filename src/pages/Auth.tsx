@@ -57,9 +57,88 @@ const Auth = () => {
     await supabase.from("user_roles").insert({ user_id: signedInUser.id, role: requestedRole });
   };
 
+  // Verification UX state
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ kind: "success" | "error" | "info"; text: string } | null>(null);
+  const [resending, setResending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
   useEffect(() => {
-    if (!authLoading && user) navigate("/", { replace: true });
-  }, [user, authLoading, navigate]);
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
+  // Handle verification callback (errors arrive in the URL hash or query)
+  useEffect(() => {
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const errDesc = hash.get("error_description") || searchParams.get("error_description");
+    if (errDesc) {
+      const code = hash.get("error_code") || searchParams.get("error_code") || "";
+      setNotice({
+        kind: "error",
+        text: code === "otp_expired"
+          ? "Verification failed: this link is invalid or has expired. Request a new verification email below."
+          : `Verification failed: ${errDesc.replace(/\+/g, " ")}`,
+      });
+      setPendingEmail("");
+      setTab("signin");
+      window.history.replaceState(null, "", "/auth");
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (authLoading || !user) return;
+    if (searchParams.get("verified") === "1") {
+      toast.success("Email verified successfully. You can now sign in to EcoLink.");
+      navigate("/company/register", { replace: true });
+      return;
+    }
+    navigate("/", { replace: true });
+  }, [user, authLoading, navigate, searchParams]);
+
+  const mapAuthError = (msg: string, status?: number) => {
+    const m = msg.toLowerCase();
+    if (status === 429 || m.includes("rate limit") || m.includes("too many") || m.includes("security purposes"))
+      return "Too many requests. Please wait a minute and try again.";
+    if (m.includes("failed to fetch") || m.includes("network")) return "Network error. Check your connection and try again.";
+    if (m.includes("invalid email") || m.includes("unable to validate email")) return "Please enter a valid email address.";
+    if (m.includes("already confirmed") || m.includes("already verified")) return "This email is already verified. You can sign in.";
+    if (m.includes("already registered")) return "An account with this email already exists. Please sign in.";
+    return msg;
+  };
+
+  const handleResend = async (target?: string) => {
+    const parsed = z.string().trim().email().safeParse(target ?? pendingEmail ?? email);
+    if (!parsed.success) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+    setResending(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: parsed.data,
+        options: { emailRedirectTo: `${window.location.origin}/auth?verified=1` },
+      });
+      if (error) {
+        const text = mapAuthError(error.message, error.status);
+        setNotice({ kind: "error", text });
+        toast.error(text);
+        return;
+      }
+      // Supabase does not reveal whether the email exists (prevents account enumeration).
+      setNotice({ kind: "success", text: "Verification email sent. Please check your inbox (and spam folder). If no email arrives, the address may not be registered or is already verified." });
+      toast.success("Verification email sent. Please check your inbox.");
+      setCooldown(60);
+    } catch {
+      const text = "Network error. Check your connection and try again.";
+      setNotice({ kind: "error", text });
+      toast.error(text);
+    } finally {
+      setResending(false);
+    }
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,13 +148,27 @@ const Auth = () => {
       return;
     }
     setSubmitting(true);
+    setNotice(null);
     const { data, error } = await supabase.auth.signInWithPassword({
       email: parsed.data.email,
       password: parsed.data.password,
     });
     setSubmitting(false);
     if (error) {
-      toast.error(error.message);
+      const code = (error as { code?: string }).code;
+      if (code === "email_not_confirmed" || error.message.toLowerCase().includes("not confirmed")) {
+        setPendingEmail(parsed.data.email);
+        setNotice({ kind: "info", text: "Please verify your email address before signing in." });
+        toast.error("Please verify your email address before signing in.");
+        return;
+      }
+      toast.error(mapAuthError(error.message, error.status));
+      return;
+    }
+    if (data.user && !data.user.email_confirmed_at && data.user.app_metadata?.provider === "email") {
+      await supabase.auth.signOut();
+      setPendingEmail(parsed.data.email);
+      setNotice({ kind: "info", text: "Please verify your email address before signing in." });
       return;
     }
     if (data.user) await ensureProfileAndRole(data.user);
@@ -109,22 +202,36 @@ const Auth = () => {
       return;
     }
     setSubmitting(true);
-    const { data, error } = await supabase.auth.signUp({
-      email: parsed.data.email,
-      password: parsed.data.password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: {
-          full_name: parsed.data.fullName,
-          company: parsed.data.company ?? "",
-          location: parsed.data.location ?? "",
-          role: parsed.data.role,
+    let data, error;
+    try {
+      ({ data, error } = await supabase.auth.signUp({
+        email: parsed.data.email,
+        password: parsed.data.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth?verified=1`,
+          data: {
+            full_name: parsed.data.fullName,
+            company: parsed.data.company ?? "",
+            location: parsed.data.location ?? "",
+            role: parsed.data.role,
+          },
         },
-      },
-    });
+      }));
+    } catch {
+      setSubmitting(false);
+      toast.error("Network error. Check your connection and try again.");
+      return;
+    }
     setSubmitting(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(mapAuthError(error.message, error.status));
+      return;
+    }
+    // Existing, already-verified email: Supabase returns a user with no identities
+    if (data.user && (data.user.identities?.length ?? 0) === 0) {
+      setNotice({ kind: "info", text: "This email is already registered. Please sign in, or resend the verification email if you haven't verified yet." });
+      setPendingEmail(parsed.data.email);
+      setTab("signin");
       return;
     }
     if (data.user && data.session) {
@@ -133,7 +240,10 @@ const Auth = () => {
       navigate("/company/register");
       return;
     }
-    toast.success("Account created! Check your email to confirm.");
+    setPendingEmail(parsed.data.email);
+    setNotice({ kind: "success", text: "Account created successfully. Please check your email and verify your account before signing in." });
+    toast.success("Account created! Check your email to verify.");
+    setPassword("");
     setTab("signin");
   };
 
@@ -162,6 +272,43 @@ const Auth = () => {
         </Link>
 
         <div className="bg-card border border-border rounded-2xl shadow-card p-8">
+          {notice && (
+            <div
+              role="status"
+              className={`mb-5 rounded-lg border p-3 text-sm ${
+                notice.kind === "error"
+                  ? "border-destructive/40 bg-destructive/10 text-destructive"
+                  : notice.kind === "success"
+                    ? "border-primary/40 bg-primary/10 text-foreground"
+                    : "border-border bg-muted text-foreground"
+              }`}
+            >
+              <p>{notice.text}</p>
+            </div>
+          )}
+          {pendingEmail !== null && (
+            <div className="mb-5 rounded-lg border border-border p-3 space-y-2">
+              <Label htmlFor="rv-email" className="text-xs">Resend verification email</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="rv-email"
+                  type="email"
+                  placeholder="you@company.com"
+                  value={pendingEmail}
+                  onChange={(e) => setPendingEmail(e.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={resending || cooldown > 0}
+                  onClick={() => handleResend(pendingEmail)}
+                >
+                  {resending && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {cooldown > 0 ? `Resend (${cooldown}s)` : "Resend"}
+                </Button>
+              </div>
+            </div>
+          )}
           <Tabs value={tab} onValueChange={setTab}>
             <TabsList className="grid grid-cols-2 w-full mb-6">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
@@ -187,13 +334,22 @@ const Auth = () => {
                   {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
                   Sign In
                 </Button>
-                <button
-                  type="button"
-                  onClick={handleForgotPassword}
-                  className="text-xs text-muted-foreground hover:text-foreground underline w-full text-center"
-                >
-                  Forgot password?
-                </button>
+                <div className="flex justify-between">
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="text-xs text-muted-foreground hover:text-foreground underline"
+                  >
+                    Forgot password?
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPendingEmail(pendingEmail ?? email)}
+                    className="text-xs text-muted-foreground hover:text-foreground underline"
+                  >
+                    Resend Verification Email
+                  </button>
+                </div>
               </form>
             </TabsContent>
 
