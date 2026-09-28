@@ -1,3 +1,4 @@
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { z } from "zod";
@@ -26,6 +27,7 @@ const signUpSchema = signInSchema.extend({
 });
 
 const Auth = () => {
+  usePageMeta({ title: 'Sign In or Create an Account — EcoLink', description: 'Sign in or join EcoLink to list byproducts, find resources and message businesses.', path: '/auth' });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();

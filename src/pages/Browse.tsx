@@ -1,3 +1,4 @@
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -12,6 +13,7 @@ const CATEGORIES = ["metals", "wood", "textiles", "plastics", "paper", "glass", 
 const PRICE_TYPES = ["free", "negotiable", "fixed"];
 
 const Browse = () => {
+  usePageMeta({ title: 'Browse Materials — EcoLink', description: 'Browse metals, wood, textiles, plastics and more surplus materials listed by local businesses on EcoLink.', path: '/browse' });
   const [params] = useSearchParams();
   const q = params.get("q");
   const [search, setSearch] = useState(q ?? "");
