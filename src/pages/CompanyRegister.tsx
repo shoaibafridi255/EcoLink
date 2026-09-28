@@ -258,7 +258,7 @@ const TagSelect = ({
             .map((s) => (
               <Badge key={s} className="bg-gold text-ink-deep gap-1">
                 {s}
-                <button type="button" onClick={() => toggle(s)}>
+                <button type="button" onClick={() => toggle(s)} aria-label={`Remove ${s}`}>
                   <X className="w-3 h-3" />
                 </button>
               </Badge>

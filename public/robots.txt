@@ -12,3 +12,5 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+Sitemap: https://eco-link-web-applicatoin.lovable.app/sitemap.xml

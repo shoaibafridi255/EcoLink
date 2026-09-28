@@ -1,3 +1,4 @@
+import { usePageMeta } from "@/hooks/usePageMeta";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
@@ -11,6 +12,7 @@ const values = [
 ];
 
 const About = () => {
+  usePageMeta({ title: 'About EcoLink — Circular Economy Marketplace', description: 'Learn about EcoLink, a hyper-local industrial waste-to-resource exchange fostering circular economy principles.', path: '/about' });
   return (
     <div className="min-h-screen bg-background">
       <Navbar />

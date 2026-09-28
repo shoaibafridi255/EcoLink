@@ -1,3 +1,4 @@
+import { usePageMeta } from "@/hooks/usePageMeta";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import HowItWorks from "@/components/HowItWorks";
@@ -23,6 +24,7 @@ const seekerSteps = [
 ];
 
 const HowItWorksPage = () => {
+  usePageMeta({ title: 'How It Works — EcoLink', description: 'See how Listers post surplus materials and Seekers find affordable resources on EcoLink in four simple steps.', path: '/how-it-works' });
   return (
     <div className="min-h-screen bg-background">
       <Navbar />

@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Tag, Clock, Building2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { signMany } from "@/lib/materialImage";
 
 interface MaterialRow {
@@ -100,6 +101,27 @@ const MaterialDetail = () => {
     navigate(`/messages?c=${conv.id}`);
   };
 
+  usePageMeta({
+    title: material ? `${material.title} — EcoLink` : "Material — EcoLink",
+    description: material
+      ? `${material.title}${material.quantity ? ` (${material.quantity})` : ""} available on EcoLink, the waste-to-resource marketplace.`
+      : "View this material listing on EcoLink, the waste-to-resource marketplace.",
+    jsonLd: material
+      ? {
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: material.title,
+          description: (material as any).description ?? material.title,
+          offers: {
+            "@type": "Offer",
+            price: material.price_type === "free" ? 0 : material.price ?? undefined,
+            priceCurrency: "USD",
+            availability: "https://schema.org/InStock",
+          },
+        }
+      : null,
+  });
+
   if (loading) return <div className="min-h-screen bg-background"><Navbar /><p className="pt-24 text-center text-muted-foreground">Loading…</p></div>;
   if (!material) return <div className="min-h-screen bg-background"><Navbar /><p className="pt-24 text-center text-muted-foreground">Material not found.</p></div>;
 
@@ -124,7 +146,7 @@ const MaterialDetail = () => {
                   {images.length > 1 && (
                     <div className="flex gap-2 overflow-x-auto">
                       {images.map((img, i) => (
-                        <button key={i} onClick={() => setSelectedImg(i)} className={`w-16 h-16 rounded-lg overflow-hidden border-2 shrink-0 ${i === selectedImg ? "border-primary" : "border-border"}`}>
+                        <button key={i} onClick={() => setSelectedImg(i)} aria-label={`View image ${i + 1}`} className={`w-16 h-16 rounded-lg overflow-hidden border-2 shrink-0 ${i === selectedImg ? "border-primary" : "border-border"}`}>
                           <img src={img} alt="" className="w-full h-full object-cover" />
                         </button>
                       ))}

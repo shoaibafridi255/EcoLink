@@ -42,7 +42,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  to="/list"
+                  to="/profile"
                   className="text-background/60 hover:text-background transition-colors text-sm"
                 >
                   Post a Listing
