@@ -1,3 +1,4 @@
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -398,12 +399,7 @@ const Profile = () => {
               disabled={avatarUploading}
               onClick={() => document.getElementById("avatar-upload")?.click()}
             >
-              <ImagePlus className="w-4 h-4" />
-              {avatarUploading
-                ? "Uploading…"
-                : profile.avatar_url
-                  ? "Change picture"
-                  : "Upload picture"}
+              {avatarUploading ? <LoadingSpinner label="Uploading profile picture" /> : <><ImagePlus className="w-4 h-4" />{profile.avatar_url ? "Change picture" : "Upload picture"}</>}
             </Button>
             {(avatarUploading || avatarProgress > 0) && (
               <div className="w-full mt-3 space-y-1">
@@ -452,7 +448,7 @@ const Profile = () => {
                   disabled={saving}
                   className="text-ink hover:text-ink-deep hover:bg-cream font-bold"
                 >
-                  {saving ? "Saving…" : "Save Changes"}
+                  {saving ? <LoadingSpinner label="Saving profile" /> : "Save Changes"}
                 </Button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
@@ -530,7 +526,7 @@ const Profile = () => {
             </div>
 
             {matLoading ? (
-              <p className="text-ink py-8 text-center">Loading…</p>
+              <div className="text-ink py-8 flex justify-center"><LoadingSpinner label="Loading your materials" /></div>
             ) : materials.length === 0 ? (
               <div className="py-16 text-center border-2 border-dashed border-ink/15 rounded-2xl">
                 <Package className="w-12 h-12 mx-auto text-ink/40 mb-3" />
@@ -686,7 +682,7 @@ const Profile = () => {
                 <Button variant="outline">Cancel</Button>
               </DialogClose>
               <Button variant="eco" onClick={handleSaveMaterial} disabled={uploading}>
-                {uploading ? "Uploading…" : editingId ? "Save Changes" : "Add Material"}
+                {uploading ? <LoadingSpinner label="Saving material" /> : editingId ? "Save Changes" : "Add Material"}
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -1,3 +1,4 @@
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -317,7 +318,7 @@ const Admin = () => {
   });
 
   const V = ({ v }: { v: number | string }) => (
-    <span>{loadingData ? "…" : v}</span>
+    <span>{loadingData ? <LoadingSpinner label="Loading statistics" /> : v}</span>
   );
 
   return (
@@ -883,7 +884,7 @@ const Admin = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingMaterial(null)}>Cancel</Button>
             <Button onClick={handleSaveMaterial} disabled={savingMaterial}>
-              {savingMaterial ? "Saving…" : "Save changes"}
+              {savingMaterial ? <LoadingSpinner label="Saving material" /> : "Save changes"}
             </Button>
           </DialogFooter>
         </DialogContent>

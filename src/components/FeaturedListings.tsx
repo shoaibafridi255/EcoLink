@@ -1,3 +1,4 @@
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { MapPin, Clock, Tag } from "lucide-react";
@@ -156,7 +157,7 @@ const FeaturedListings = ({ limit = 6, query, category, priceType }: { limit?: n
         </motion.div>
 
         {loading ? (
-          <p className="text-center text-muted-foreground py-12">Loading materials…</p>
+          <div className="flex justify-center text-muted-foreground py-12"><LoadingSpinner label="Loading materials" /></div>
         ) : listings.length === 0 ? (
           <p className="text-center text-muted-foreground py-12">No materials found. Be the first to list one!</p>
         ) : (

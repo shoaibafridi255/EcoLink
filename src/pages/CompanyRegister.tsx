@@ -1,3 +1,4 @@
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -824,8 +825,7 @@ const CompanyRegister = () => {
                     onClick={() => logoRef.current?.click()}
                     className="border-ink/25 gap-2"
                   >
-                    {logoUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
-                    {logoUploading ? "Uploading…" : logoPreview ? "Change logo" : "Upload logo"}
+                    {logoUploading ? <LoadingSpinner label="Uploading company logo" /> : <><ImagePlus className="w-4 h-4" />{logoPreview ? "Change logo" : "Upload logo"}</>}
                   </Button>
                 </div>
               </Field>
@@ -849,8 +849,7 @@ const CompanyRegister = () => {
                     onClick={() => docRef.current?.click()}
                     className="border-ink/25 gap-2"
                   >
-                    {docUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-                    {docUploading ? "Uploading…" : docName ? "Replace document" : "Upload document"}
+                    {docUploading ? <LoadingSpinner label="Uploading document" /> : <><FileText className="w-4 h-4" />{docName ? "Replace document" : "Upload document"}</>}
                   </Button>
                   {docName && <span className="text-xs text-ink truncate">{docName}</span>}
                 </div>
