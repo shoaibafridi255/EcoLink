@@ -1,3 +1,4 @@
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -122,7 +123,7 @@ const MaterialDetail = () => {
       : null,
   });
 
-  if (loading) return <div className="min-h-screen bg-background"><Navbar /><p className="pt-24 text-center text-muted-foreground">Loading…</p></div>;
+  if (loading) return <div className="min-h-screen bg-background"><Navbar /><div className="pt-24 flex justify-center text-muted-foreground"><LoadingSpinner label="Loading material" /></div></div>;
   if (!material) return <div className="min-h-screen bg-background"><Navbar /><p className="pt-24 text-center text-muted-foreground">Material not found.</p></div>;
 
   const images = signedImages;
